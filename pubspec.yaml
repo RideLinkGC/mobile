@@ -1,0 +1,88 @@
+name: ridelink
+description: "RideLink - A Real-Time Carpooling Platform for Daily Commuters"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # State Management
+  provider: ^6.1.2
+
+  # Navigation
+  go_router: ^14.8.1
+
+  # Networking
+  dio: ^5.7.0
+
+  # Local Storage
+  shared_preferences: ^2.3.4
+  flutter_secure_storage: ^9.2.4
+
+  # Maps & Location
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  geolocator: ^13.0.2
+
+  # Image Handling
+  image_picker: ^1.1.2
+  cached_network_image: ^3.4.1
+
+  # UI Components
+  shimmer: ^3.0.0
+  flutter_rating_bar: ^4.0.1
+  flutter_svg: ^2.0.17
+  smooth_page_indicator: ^1.2.0+3
+
+  # Notifications
+  flutter_local_notifications: ^18.0.1
+
+  # Localization
+  intl: any
+
+  # Real-Time
+  convex_flutter: ^3.0.1
+
+  # Payment
+  chapasdk: ^0.0.8+1
+
+  # Utilities
+  url_launcher: ^6.3.1
+  uuid: ^4.5.1
+  gebeta_gl: ^0.22.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/styles/
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Poppins-ExtraBold.ttf
+          weight: 800
