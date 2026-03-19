@@ -4,10 +4,12 @@ import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/services/gebeta_maps_service.dart';
+import '../../../core/services/storage_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/gebeta_map_widget.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../driver/trip/providers/trip_provider.dart';
 import '../providers/tracking_provider.dart';
 
 class LiveTrackingScreen extends StatefulWidget {
@@ -22,40 +24,81 @@ class LiveTrackingScreen extends StatefulWidget {
 class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
   final GlobalKey<GebetaMapWidgetState> _mapKey = GlobalKey();
 
-  final _originLatLng = const LatLng(9.0192, 38.7525);
-  final _destLatLng = const LatLng(9.0300, 38.7800);
-
   RouteResult? _route;
+  TripModel? _trip;
 
   @override
   void initState() {
     super.initState();
-    _loadRoute();
-    _startTracking();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadTripData();
+      _startTracking();
+    });
   }
 
-  void _startTracking() {
+  Future<void> _loadTripData() async {
+    final trip =
+        await context.read<TripProvider>().getTripById(widget.tripId);
+    if (mounted) {
+      setState(() => _trip = trip);
+      if (trip != null && trip.routeCoordinates.isEmpty) {
+        _loadRoute();
+      }
+    }
+  }
+
+  Future<void> _startTracking() async {
     final authProvider = context.read<AuthProvider>();
     final trackingProvider = context.read<TrackingProvider>();
 
     if (authProvider.isDriver) {
-      trackingProvider.startBroadcasting(widget.tripId);
+      final driverId =
+          await context.read<StorageService>().getDriverId() ?? '';
+      trackingProvider.startBroadcasting(widget.tripId, driverId: driverId);
     } else {
       trackingProvider.startListening(widget.tripId);
     }
   }
 
   Future<void> _loadRoute() async {
+    final trip = _trip;
+    if (trip == null) return;
+
     final mapsService = context.read<GebetaMapsService>();
+    final originCoords = trip.routeCoordinates.isNotEmpty
+        ? trip.routeCoordinates.first
+        : null;
+    final destCoords = trip.routeCoordinates.isNotEmpty
+        ? trip.routeCoordinates.last
+        : null;
+
+    if (originCoords == null || destCoords == null) return;
+
     final route = await mapsService.getRoute(
-      originLat: _originLatLng.latitude,
-      originLng: _originLatLng.longitude,
-      destLat: _destLatLng.latitude,
-      destLng: _destLatLng.longitude,
+      originLat: originCoords.lat,
+      originLng: originCoords.lng,
+      destLat: destCoords.lat,
+      destLng: destCoords.lng,
     );
     if (mounted) {
       setState(() => _route = route);
     }
+  }
+
+  LatLng get _originLatLng {
+    if (_trip != null && _trip!.routeCoordinates.isNotEmpty) {
+      final c = _trip!.routeCoordinates.first;
+      return LatLng(c.lat, c.lng);
+    }
+    return const LatLng(9.0192, 38.7525);
+  }
+
+  LatLng get _destLatLng {
+    if (_trip != null && _trip!.routeCoordinates.isNotEmpty) {
+      final c = _trip!.routeCoordinates.last;
+      return LatLng(c.lat, c.lng);
+    }
+    return const LatLng(9.0300, 38.7800);
   }
 
   List<MapMarker> _buildMarkers(LatLng? driverPos) {
@@ -70,6 +113,17 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
   }
 
   List<MapPolyline> get _polylines {
+    if (_trip != null && _trip!.routeCoordinates.length >= 2) {
+      return [
+        MapPolyline(
+          points: _trip!.routeCoordinates
+              .map((c) => LatLng(c.lat, c.lng))
+              .toList(),
+          color: '#188AEC',
+          width: 5,
+        ),
+      ];
+    }
     if (_route == null) return [];
     final points =
         _route!.polylinePoints.map((p) => LatLng(p[0], p[1])).toList();
@@ -83,6 +137,10 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
     final trackingProvider = context.watch<TrackingProvider>();
     final isDriver = authProvider.isDriver;
     final driverPos = trackingProvider.driverPosition;
+
+    final driverName = _trip?.driverName ?? 'Driver';
+    final vehicleInfo = _trip?.vehicleModel ?? '';
+    final rating = _trip?.driverRating?.toStringAsFixed(1) ?? '-';
 
     return Scaffold(
       body: Stack(
@@ -167,14 +225,14 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Abebe Kebede',
+                                  driverName,
                                   style: Theme.of(context)
                                       .textTheme
                                       .titleMedium
                                       ?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 Text(
-                                  'Toyota Corolla • 4.8 ★',
+                                  '$vehicleInfo • $rating ★',
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodySmall
@@ -224,9 +282,11 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
                                         color: AppColors.textSecondaryLight),
                               ),
                               Text(
-                                _route != null
-                                    ? '${_route!.distanceKm.toStringAsFixed(1)} km'
-                                    : '-- km',
+                                _trip != null && _trip!.distanceKm > 0
+                                    ? '${_trip!.distanceKm.toStringAsFixed(1)} km'
+                                    : _route != null
+                                        ? '${_route!.distanceKm.toStringAsFixed(1)} km'
+                                        : '-- km',
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleMedium

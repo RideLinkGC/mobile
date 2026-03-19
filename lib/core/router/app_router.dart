@@ -90,6 +90,10 @@ class AppRouter {
               builder: (context, state) => const ChatListScreen(),
             ),
             GoRoute(
+              path: '/notifications',
+              builder: (context, state) => const NotificationsScreen(),
+            ),
+            GoRoute(
               path: '/profile',
               builder: (context, state) => const ProfileScreen(),
             ),
@@ -192,10 +196,6 @@ class AppRouter {
         GoRoute(
           path: '/my-subscriptions',
           builder: (context, state) => const MySubscriptionsScreen(),
-        ),
-        GoRoute(
-          path: '/notifications',
-          builder: (context, state) => const NotificationsScreen(),
         ),
         GoRoute(
           path: '/sos/:tripId',

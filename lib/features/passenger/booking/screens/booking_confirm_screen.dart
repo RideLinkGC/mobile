@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gebeta_gl/gebeta_gl.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -8,6 +10,9 @@ import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/gebeta_map_widget.dart';
 import '../../../../core/widgets/location_search_field.dart';
 import '../../../../core/services/gebeta_maps_service.dart';
+import '../../../../core/services/storage_service.dart';
+import '../../../driver/trip/providers/trip_provider.dart';
+import '../providers/booking_provider.dart';
 
 class BookingConfirmScreen extends StatefulWidget {
   final String tripId;
@@ -27,14 +32,8 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
   final _pickupLatLng = const LatLng(9.0192, 38.7525);
   final _dropoffLatLng = const LatLng(9.0300, 38.7800);
 
-  final trip = {
-    'driverName': 'Abebe Kebede',
-    'origin': 'Bole',
-    'destination': 'Megenagna',
-    'departureTime': '08:00 AM',
-    'pricePerSeat': 45,
-    'seats': 1,
-  };
+  static const int _seats = 1;
+  static const int _platformFee = 5;
 
   List<MapMarker> get _markers {
     final pickup = _pickupResult != null
@@ -49,38 +48,112 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
     ];
   }
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TripProvider>().getTripById(widget.tripId);
+    });
+  }
+
   Future<void> _onConfirm() async {
     final l10n = AppLocalizations.of(context)!;
+    final tripProvider = context.read<TripProvider>();
+    final storageService = context.read<StorageService>();
+    final bookingProvider = context.read<BookingProvider>();
+
+    final trip = tripProvider.selectedTrip;
+    if (trip == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Trip not found')),
+        );
+      }
+      return;
+    }
+
+    final passengerId = await storageService.getPassengerId();
+    if (passengerId == null || passengerId.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please log in to book a ride')),
+        );
+      }
+      return;
+    }
+
     setState(() => _isConfirming = true);
-    await Future.delayed(const Duration(milliseconds: 1200));
+
+    final pickUpPoint = _pickupResult?.name ?? trip.origin;
+    final dropOffPoint = _dropoffResult?.name ?? trip.destination;
+    final totalPrice = trip.pricePerSeat * _seats;
+
+    final success = await bookingProvider.requestBooking(
+          tripId: widget.tripId,
+          passengerId: passengerId,
+          seatsBooked: _seats,
+          totalPrice: totalPrice,
+          pickUpPoint: pickUpPoint,
+          dropOffPoint: dropOffPoint,
+        );
+
     if (!mounted) return;
     setState(() => _isConfirming = false);
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.bookingConfirmed),
-        content: const Text(
-            'Your booking has been confirmed. The driver will be notified.'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              context.go('/passenger');
-            },
-            child: Text(l10n.confirm),
+
+    if (success) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.bookingConfirmed),
+          content: const Text(
+            'Your booking has been confirmed. The driver will be notified.',
           ),
-        ],
-      ),
-    );
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                context.go('/passenger');
+              },
+              child: Text(l10n.confirm),
+            ),
+          ],
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            bookingProvider.error ?? 'Failed to request booking',
+          ),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final subtotal = (trip['pricePerSeat'] as int) * (trip['seats'] as int);
-    const platformFee = 5;
-    final total = subtotal + platformFee;
+    final tripProvider = context.watch<TripProvider>();
+    final trip = tripProvider.selectedTrip;
+
+    if (trip == null && !tripProvider.loading) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.bookRide)),
+        body: const Center(child: Text('Trip not found')),
+      );
+    }
+
+    if (trip == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.bookRide)),
+        body: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      );
+    }
+
+    final subtotal = trip.pricePerSeat * _seats;
+    final total = subtotal + _platformFee;
+    final departureFormatted = DateFormat.jm().format(trip.departureTime);
 
     return Scaffold(
       appBar: AppBar(
@@ -108,19 +181,26 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Trip Summary',
-                      style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    'Trip Summary',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 12),
-                  Text(trip['driverName'] as String,
-                      style: Theme.of(context).textTheme.titleSmall),
+                  Text(
+                    trip.driverName ?? 'Driver',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.location_on_outlined,
-                          size: 16, color: AppColors.primary),
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
                       const SizedBox(width: 6),
                       Text(
-                        '${trip['origin']} → ${trip['destination']}',
+                        '${trip.origin} → ${trip.destination}',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
@@ -128,11 +208,14 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.access_time,
-                          size: 16, color: AppColors.textSecondaryLight),
+                      Icon(
+                        Icons.access_time,
+                        size: 16,
+                        color: AppColors.textSecondaryLight,
+                      ),
                       const SizedBox(width: 6),
                       Text(
-                        '${trip['departureTime']}',
+                        departureFormatted,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
@@ -144,7 +227,7 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
             LocationSearchField(
               hintText: 'Pickup Point',
               prefixIcon: Icons.location_on_outlined,
-              initialValue: trip['origin'] as String,
+              initialValue: trip.origin,
               onPlaceSelected: (result) {
                 setState(() => _pickupResult = result);
               },
@@ -153,7 +236,7 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
             LocationSearchField(
               hintText: 'Dropoff Point',
               prefixIcon: Icons.location_on_outlined,
-              initialValue: trip['destination'] as String,
+              initialValue: trip.destination,
               onPlaceSelected: (result) {
                 setState(() => _dropoffResult = result);
               },
@@ -163,18 +246,20 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Price Breakdown',
-                      style: Theme.of(context).textTheme.titleSmall),
+                  Text(
+                    'Price Breakdown',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                   const SizedBox(height: 12),
                   _PriceRow(
                     label:
-                        '${trip['pricePerSeat']} ${l10n.etb} × ${trip['seats']} ${l10n.seats}',
+                        '${trip.pricePerSeat.toStringAsFixed(0)} ${l10n.etb} × $_seats ${l10n.seats}',
                     value: '$subtotal ${l10n.etb}',
                   ),
                   const SizedBox(height: 8),
                   _PriceRow(
                     label: 'Platform fee',
-                    value: '$platformFee ${l10n.etb}',
+                    value: '$_platformFee ${l10n.etb}',
                   ),
                   const Divider(height: 24),
                   _PriceRow(

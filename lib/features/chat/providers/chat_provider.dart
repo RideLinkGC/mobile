@@ -90,7 +90,7 @@ class ChatMessage {
 
 class ChatProvider extends ChangeNotifier {
   final ConvexClient? _convex;
-  final String _currentUserId;
+  String _currentUserId;
 
   SubscriptionHandle? _conversationsSubscription;
   SubscriptionHandle? _messagesSubscription;
@@ -138,6 +138,12 @@ class ChatProvider extends ChangeNotifier {
   ];
 
   ChatProvider(this._convex, this._currentUserId);
+
+  void setUserId(String userId) {
+    if (_currentUserId != userId) {
+      _currentUserId = userId;
+    }
+  }
 
   Future<void> loadConversations() async {
     _loadingConversations = true;

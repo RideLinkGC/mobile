@@ -75,7 +75,7 @@ class TrackingProvider extends ChangeNotifier {
   }
 
   /// Driver broadcasts their location.
-  Future<void> startBroadcasting(String tripId) async {
+  Future<void> startBroadcasting(String tripId, {required String driverId}) async {
     _activeTripId = tripId;
     _isTracking = true;
     _error = null;
@@ -95,7 +95,7 @@ class TrackingProvider extends ChangeNotifier {
         name: ConvexFunctions.startTracking,
         args: {
           'tripId': tripId,
-          'driverId': tripId,
+          'driverId': driverId,
           'latitude': position?.latitude ?? 0.0,
           'longitude': position?.longitude ?? 0.0,
         },

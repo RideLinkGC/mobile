@@ -94,6 +94,22 @@ class BookingProvider extends ChangeNotifier {
     }
   }
 
+  Future<BookingModel?> getBookingById(String bookingId) async {
+    try {
+      final response =
+          await _apiClient.get(ApiEndpoints.bookingById(bookingId));
+      final data = response.data as Map<String, dynamic>?;
+      if (data != null) {
+        _activeBooking = BookingModel.fromJson(data);
+        notifyListeners();
+        return _activeBooking;
+      }
+    } catch (e) {
+      debugPrint('Failed to load booking: $e');
+    }
+    return null;
+  }
+
   Future<bool> cancelBooking(String bookingId) async {
     try {
       await _apiClient.patch(ApiEndpoints.cancelBooking(bookingId));

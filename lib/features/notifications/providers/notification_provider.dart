@@ -68,7 +68,7 @@ class AppNotification {
 
 class NotificationProvider extends ChangeNotifier {
   final ConvexClient? _convex;
-  final String _currentUserId;
+  String _currentUserId;
 
   SubscriptionHandle? _subscription;
 
@@ -114,6 +114,12 @@ class NotificationProvider extends ChangeNotifier {
   ];
 
   NotificationProvider(this._convex, this._currentUserId);
+
+  void setUserId(String userId) {
+    if (_currentUserId != userId) {
+      _currentUserId = userId;
+    }
+  }
 
   Future<void> loadNotifications() async {
     _loading = true;

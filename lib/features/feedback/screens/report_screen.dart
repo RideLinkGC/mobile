@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../providers/feedback_provider.dart';
 
 class ReportScreen extends StatefulWidget {
   final String targetId;
@@ -31,28 +35,47 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   Future<void> _submitReport() async {
-    if (_selectedCategory == null || _descriptionController.text.trim().isEmpty) return;
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Report Submitted'),
-        content: const Text(
-          'Thank you for your report. We will review it and take appropriate action.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(AppLocalizations.of(ctx)!.confirm),
-          ),
-        ],
-      ),
+    if (_selectedCategory == null ||
+        _descriptionController.text.trim().isEmpty) {
+      return;
+    }
+
+    final feedbackProvider = context.read<FeedbackProvider>();
+    final authProvider = context.read<AuthProvider>();
+    final fromUserId = authProvider.user?.id ?? '';
+
+    final comment =
+        '[$_selectedCategory] ${_descriptionController.text.trim()}';
+
+    final success = await feedbackProvider.submitReport(
+      fromUserId: fromUserId,
+      toUserId: widget.targetId,
+      comment: comment,
     );
-    if (mounted) context.pop();
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Report submitted. We will review it shortly.'),
+        ),
+      );
+      context.pop();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(feedbackProvider.error ?? 'Failed to submit report'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final feedbackProvider = context.watch<FeedbackProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -99,7 +122,8 @@ class _ReportScreenState extends State<ReportScreen> {
             const SizedBox(height: 32),
             AppButton(
               text: l10n.submit,
-              onPressed: _submitReport,
+              onPressed: feedbackProvider.submitting ? null : _submitReport,
+              isLoading: feedbackProvider.submitting,
             ),
           ],
         ),

@@ -28,7 +28,13 @@ class TripSeriesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiClient.get(ApiEndpoints.series);
+      final driverId = await _storage.getDriverId();
+      final response = await _apiClient.get(
+        ApiEndpoints.series,
+        queryParameters: {
+          if (driverId != null) 'driverId': driverId,
+        },
+      );
       final list = response.data as List?;
       if (list != null) {
         _series = list

@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:gebeta_gl/gebeta_gl.dart';
+import 'package:intl/intl.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/services/gebeta_maps_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/gebeta_map_widget.dart';
 import '../../../../core/widgets/rating_widget.dart';
+import '../../../driver/trip/providers/trip_provider.dart';
+import '../../../feedback/providers/feedback_provider.dart';
 
 class DriverDetailScreen extends StatefulWidget {
   final String tripId;
@@ -20,71 +22,81 @@ class DriverDetailScreen extends StatefulWidget {
 }
 
 class _DriverDetailScreenState extends State<DriverDetailScreen> {
-  RouteResult? _route;
-  bool _loadingRoute = true;
-
-  final _originLatLng = const LatLng(9.0192, 38.7525);
-  final _destLatLng = const LatLng(9.0300, 38.7800);
-
-  final driver = {
-    'name': 'Abebe Kebede',
-    'rating': 4.8,
-    'vehicleModel': 'Toyota Corolla',
-    'vehiclePlate': 'AA-12345',
-    'vehicleSeats': 4,
-  };
-
-  final trip = {
-    'origin': 'Bole',
-    'destination': 'Megenagna',
-    'departureTime': '08:00 AM',
-    'price': 45,
-    'seatsAvailable': 3,
-    'isSubscribable': true,
-  };
-
-  final reviews = [
-    {'rating': 5.0, 'comment': 'Great driver, very punctual!', 'date': '2 days ago'},
-    {'rating': 4.5, 'comment': 'Smooth ride, would recommend.', 'date': '1 week ago'},
-    {'rating': 5.0, 'comment': 'Friendly and professional.', 'date': '2 weeks ago'},
-  ];
-
   @override
   void initState() {
     super.initState();
-    _loadRoute();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
   }
 
-  Future<void> _loadRoute() async {
-    final mapsService = context.read<GebetaMapsService>();
-    final route = await mapsService.getRoute(
-      originLat: _originLatLng.latitude,
-      originLng: _originLatLng.longitude,
-      destLat: _destLatLng.latitude,
-      destLng: _destLatLng.longitude,
-    );
-    if (mounted) {
-      setState(() {
-        _route = route;
-        _loadingRoute = false;
-      });
+  Future<void> _loadData() async {
+    final trip = await context.read<TripProvider>().getTripById(widget.tripId);
+    if (mounted && trip != null) {
+      await context.read<FeedbackProvider>().loadFeedbackForUser(trip.driverId);
     }
-  }
-
-  List<LatLng> get _routePolyline {
-    if (_route == null) return [];
-    return _route!.polylinePoints
-        .map((p) => LatLng(p[0], p[1]))
-        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final tripProvider = context.watch<TripProvider>();
+    final feedbackProvider = context.watch<FeedbackProvider>();
+    final trip = tripProvider.selectedTrip;
+    final reviews = feedbackProvider.ratings;
+    final isLoading = tripProvider.loading && trip == null;
+
+    if (isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.trips)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (trip == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.trips)),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  tripProvider.error ?? 'Something went wrong',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                AppButton(
+                  text: 'Try Again',
+                  onPressed: _loadData,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final polyline = trip.routeCoordinates.isNotEmpty
+        ? trip.routeCoordinates
+            .map((c) => LatLng(c.lat, c.lng))
+            .toList()
+        : <LatLng>[];
+    final originLatLng = polyline.isNotEmpty
+        ? polyline.first
+        : const LatLng(9.0192, 38.7525);
+    final destLatLng = polyline.isNotEmpty
+        ? polyline.last
+        : const LatLng(9.0300, 38.7800);
+    final mapCenter = polyline.isNotEmpty
+        ? polyline[polyline.length ~/ 2]
+        : originLatLng;
+
+    final dateFormat = DateFormat.jm();
+    final departureFormatted = dateFormat.format(trip.departureTime);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${trip['origin']} → ${trip['destination']}'),
+        title: Text('${trip.origin} → ${trip.destination}'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -95,24 +107,28 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
               borderRadius: BorderRadius.circular(12),
               child: SizedBox(
                 height: 200,
-                child: _loadingRoute
-                    ? const Center(child: CircularProgressIndicator())
-                    : GebetaMapWidget(
-                        initialCenter: _originLatLng,
-                        initialZoom: 13,
-                        interactive: false,
-                        markers: [
-                          MapMarker(position: _originLatLng),
-                          MapMarker(position: _destLatLng),
-                        ],
-                        polylines: _routePolyline.isNotEmpty
-                            ? [MapPolyline(points: _routePolyline, color: '#188AEC', width: 4)]
-                            : [],
-                      ),
+                child: GebetaMapWidget(
+                  initialCenter: mapCenter,
+                  initialZoom: 13,
+                  interactive: false,
+                  markers: [
+                    MapMarker(position: originLatLng),
+                    MapMarker(position: destLatLng),
+                  ],
+                  polylines: polyline.length >= 2
+                      ? [
+                          MapPolyline(
+                            points: polyline,
+                            color: '#188AEC',
+                            width: 4,
+                          ),
+                        ]
+                      : [],
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            if (_route != null)
+            if (trip.distanceKm > 0)
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: Row(
@@ -120,11 +136,7 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
                   children: [
                     _InfoChip(
                       icon: Icons.straighten,
-                      label: '${_route!.distanceKm.toStringAsFixed(1)} km',
-                    ),
-                    _InfoChip(
-                      icon: Icons.timer_outlined,
-                      label: '${_route!.durationMinutes.toStringAsFixed(0)} min',
+                      label: '${trip.distanceKm.toStringAsFixed(1)} km',
                     ),
                   ],
                 ),
@@ -151,21 +163,21 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          driver['name'] as String,
+                          trip.driverName ?? 'Driver',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: 4),
                         AppRatingWidget(
-                          rating: (driver['rating'] as num).toDouble(),
+                          rating: (trip.driverRating ?? 0).toDouble(),
                           size: 18,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '${driver['vehicleModel']} (${driver['vehiclePlate']})',
+                          '${trip.vehicleModel ?? ''} (${trip.vehiclePlate ?? ''})',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                         Text(
-                          '${driver['vehicleSeats']} ${l10n.seats}',
+                          '${trip.vehicleSeats ?? 0} ${l10n.seats}',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -179,15 +191,22 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Trip Details', style: Theme.of(context).textTheme.titleSmall),
+                  Text(
+                    'Trip Details',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Icon(Icons.location_on_outlined, size: 18, color: AppColors.primary),
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 18,
+                        color: AppColors.primary,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '${trip['origin']} → ${trip['destination']}',
+                          '${trip.origin} → ${trip.destination}',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ),
@@ -196,10 +215,14 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.access_time, size: 18, color: AppColors.textSecondaryLight),
+                      Icon(
+                        Icons.access_time,
+                        size: 18,
+                        color: AppColors.textSecondaryLight,
+                      ),
                       const SizedBox(width: 8),
                       Text(
-                        '${l10n.departureTime}: ${trip['departureTime']}',
+                        '${l10n.departureTime}: $departureFormatted',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
@@ -207,10 +230,14 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.payments_outlined, size: 18, color: AppColors.textSecondaryLight),
+                      Icon(
+                        Icons.payments_outlined,
+                        size: 18,
+                        color: AppColors.textSecondaryLight,
+                      ),
                       const SizedBox(width: 8),
                       Text(
-                        '${l10n.pricePerSeat}: ${trip['price']} ${l10n.etb}${l10n.perSeat}',
+                        '${l10n.pricePerSeat}: ${trip.pricePerSeat.toStringAsFixed(0)} ${l10n.etb}${l10n.perSeat}',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
@@ -218,10 +245,14 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.event_seat_outlined, size: 18, color: AppColors.textSecondaryLight),
+                      Icon(
+                        Icons.event_seat_outlined,
+                        size: 18,
+                        color: AppColors.textSecondaryLight,
+                      ),
                       const SizedBox(width: 8),
                       Text(
-                        '${trip['seatsAvailable']} ${l10n.seats}',
+                        '${trip.seatsLeft} ${l10n.seats}',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
@@ -230,42 +261,72 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Reviews', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Reviews',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
-            ...reviews.map(
-              (r) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: AppCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          AppRatingWidget(
-                            rating: (r['rating'] as num).toDouble(),
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(r['date'] as String, style: Theme.of(context).textTheme.bodySmall),
-                        ],
+            if (feedbackProvider.loadingFeedback)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (reviews.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'No reviews yet',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondaryLight,
                       ),
-                      const SizedBox(height: 8),
-                      Text(r['comment'] as String, style: Theme.of(context).textTheme.bodyMedium),
-                    ],
+                ),
+              )
+            else
+              ...reviews.map(
+                (r) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: AppCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            AppRatingWidget(
+                              rating: (r.rating ?? 0).toDouble(),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              r.createdAt != null
+                                  ? DateFormat.yMMMd().format(r.createdAt!)
+                                  : '',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          r.comment ?? '',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
             const SizedBox(height: 24),
             AppButton(
               text: l10n.requestBooking,
               onPressed: () => context.push('/booking-confirm/${widget.tripId}'),
             ),
-            if (trip['isSubscribable'] as bool) ...[
+            if (trip.seriesId != null) ...[
               const SizedBox(height: 12),
               AppButton(
                 text: l10n.subscribe,
-                onPressed: () => context.push('/subscription/${widget.tripId}'),
+                onPressed: () =>
+                    context.push('/subscription/${widget.tripId}'),
                 isOutlined: true,
               ),
             ],

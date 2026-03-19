@@ -5,11 +5,13 @@ import 'package:provider/provider.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/gebeta_maps_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/gebeta_map_widget.dart';
 import '../../../../core/widgets/location_search_field.dart';
+import '../providers/trip_provider.dart';
 
 class CreateTripScreen extends StatefulWidget {
   const CreateTripScreen({super.key});
@@ -126,23 +128,80 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_originResult == null || _destinationResult == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select origin and destination on the map or via search')),
+        const SnackBar(
+          content: Text(
+            'Select origin and destination on the map or via search',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final storage = context.read<StorageService>();
+    final driverId = await storage.getDriverId();
+    if (!mounted) return;
+    if (driverId == null || driverId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You must be logged in as a driver to create a trip'),
+          backgroundColor: AppColors.error,
+        ),
       );
       return;
     }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
+
+    final provider = context.read<TripProvider>();
+    final origin = _originResult!.name;
+    final destination = _destinationResult!.name;
+    final routeCoordinates = _route != null
+        ? _route!.polylinePoints
+            .map((p) => {'lat': (p[0] as num).toDouble(), 'lng': (p[1] as num).toDouble()})
+            .toList()
+        : <Map<String, double>>[];
+    final distanceKm = _route?.distanceKm ?? 0.0;
+    final departureTime = DateTime(
+      _departureDate.year,
+      _departureDate.month,
+      _departureDate.day,
+      _departureTime.hour,
+      _departureTime.minute,
+    );
+    final pricePerSeat = double.tryParse(_priceController.text.trim()) ?? 0.0;
+
+    final success = await provider.createTrip(
+      driverId: driverId,
+      origin: origin,
+      destination: destination,
+      routeCoordinates: routeCoordinates,
+      distanceKm: distanceKm,
+      departureTime: departureTime,
+      availableSeats: _seats,
+      pricePerSeat: pricePerSeat,
+    );
+
     setState(() => _isLoading = false);
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Trip created successfully!'),
-        backgroundColor: AppColors.success,
-      ),
-    );
-    context.pop();
+
+    if (success) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Trip created successfully!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      context.pop();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(provider.error ?? 'Failed to create trip'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override

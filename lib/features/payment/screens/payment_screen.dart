@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../passenger/booking/providers/booking_provider.dart';
 import '../providers/payment_provider.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -22,11 +24,47 @@ class PaymentScreen extends StatefulWidget {
 class _PaymentScreenState extends State<PaymentScreen> {
   PaymentMethod _selectedMethod = PaymentMethod.inApp;
   bool _showSuccess = false;
+  BookingModel? _booking;
+  bool _loadingBooking = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadBooking());
+  }
+
+  Future<void> _loadBooking() async {
+    final booking =
+        await context.read<BookingProvider>().getBookingById(widget.bookingId);
+    if (mounted) {
+      setState(() {
+        _booking = booking;
+        _loadingBooking = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final paymentProvider = context.watch<PaymentProvider>();
+
+    if (_loadingBooking) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.payment)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final booking = _booking;
+    final route = booking != null
+        ? '${booking.tripOrigin ?? 'Origin'} → ${booking.tripDestination ?? 'Destination'}'
+        : 'Trip';
+    final departure = booking?.tripDepartureTime != null
+        ? DateFormat.jm().format(booking!.tripDepartureTime!)
+        : '--:--';
+    final seats = booking?.seatsBooked ?? 1;
+    final amount = booking?.totalPrice ?? 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -51,9 +89,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 12),
-                        _buildSummaryRow('Bole → Megenagna', 'Route'),
-                        _buildSummaryRow('08:00 AM', 'Departure'),
-                        _buildSummaryRow('1 seat', 'Passengers'),
+                        _buildSummaryRow(route, 'Route'),
+                        _buildSummaryRow(departure, 'Departure'),
+                        _buildSummaryRow('$seats seat${seats > 1 ? 's' : ''}',
+                            'Passengers'),
                       ],
                     ),
                   ),
@@ -71,7 +110,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '45 ${l10n.etb}',
+                          '${amount.toStringAsFixed(0)} ${l10n.etb}',
                           style: Theme.of(context)
                               .textTheme
                               .headlineMedium
@@ -134,12 +173,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 .bodyMedium
                 ?.copyWith(color: AppColors.textSecondaryLight),
           ),
-          Text(
-            value,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w500),
+          Flexible(
+            child: Text(
+              value,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.w500),
+              textAlign: TextAlign.end,
+            ),
           ),
         ],
       ),
@@ -192,11 +234,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
     final authProvider = context.read<AuthProvider>();
     final paymentProvider = context.read<PaymentProvider>();
     final user = authProvider.user;
+    final amount = _booking?.totalPrice ?? 0;
 
     final result = await paymentProvider.payForTrip(
       context: context,
       bookingId: widget.bookingId,
-      amount: '45',
+      amount: amount.toStringAsFixed(0),
       email: user?.email ?? 'user@ridelink.com',
       phone: user?.phone ?? '0911223344',
       firstName: user != null ? user.name.split(' ').first : 'User',

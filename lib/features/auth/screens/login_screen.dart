@@ -7,6 +7,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../../chat/providers/chat_provider.dart';
+import '../../notifications/providers/notification_provider.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -29,6 +31,11 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  void _propagateUserId(String userId) {
+    context.read<ChatProvider>().setUserId(userId);
+    context.read<NotificationProvider>().setUserId(userId);
+  }
+
   Future<void> _handleDemoLogin(UserRole role) async {
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.loginAsDemo(role);
@@ -36,6 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
+      _propagateUserId(authProvider.user?.id ?? '');
       context.go(role == UserRole.driver ? '/driver' : '/passenger');
     }
   }
@@ -52,6 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
+      _propagateUserId(authProvider.user?.id ?? '');
       final role = authProvider.user?.role.name ?? 'passenger';
       context.go(role == 'driver' ? '/driver' : '/passenger');
     } else {

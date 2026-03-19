@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import '../../../core/constants/enums.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_button.dart';
@@ -11,6 +12,8 @@ import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/rating_widget.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/models/user_model.dart';
+import '../../driver/trip/providers/trip_provider.dart';
+import '../../passenger/booking/providers/booking_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -190,6 +193,14 @@ class _DriverStatsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tripProvider = context.watch<TripProvider>();
+    final trips = tripProvider.driverTrips;
+    final totalTrips = trips.length;
+    final completedTrips =
+        trips.where((t) => t.status == TripStatus.completed).toList();
+    final earnings = completedTrips.fold<double>(
+        0, (sum, t) => sum + t.pricePerSeat * t.bookedSeats);
+
     final vehicleInfo = [
       if (user.vehicleModel != null) user.vehicleModel!,
       if (user.vehiclePlate != null) user.vehiclePlate!,
@@ -211,8 +222,12 @@ class _DriverStatsSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _StatItem(label: l10n.totalTrips, value: '—'),
-              _StatItem(label: l10n.earnings, value: '— ${l10n.etb}'),
+              _StatItem(
+                  label: l10n.totalTrips,
+                  value: '$totalTrips'),
+              _StatItem(
+                  label: l10n.earnings,
+                  value: '${earnings.toStringAsFixed(0)} ${l10n.etb}'),
             ],
           ),
         ],
@@ -229,6 +244,9 @@ class _PassengerStatsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bookingProvider = context.watch<BookingProvider>();
+    final totalBookings = bookingProvider.bookings.length;
+
     final routes = user.preferredRoutes ?? [];
     return AppCard(
       child: Column(
@@ -255,7 +273,9 @@ class _PassengerStatsSection extends StatelessWidget {
                   ),
                 )),
           const SizedBox(height: 8),
-          _StatItem(label: l10n.totalTrips, value: '—'),
+          _StatItem(
+              label: l10n.totalTrips,
+              value: '$totalBookings'),
         ],
       ),
     );

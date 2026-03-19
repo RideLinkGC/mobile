@@ -4,6 +4,7 @@ import '../../../../core/constants/enums.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../passenger/booking/models/booking_model.dart';
 import '../models/trip_model.dart';
 
 export '../models/trip_model.dart';
@@ -14,11 +15,13 @@ class TripProvider extends ChangeNotifier {
 
   List<TripModel> _driverTrips = [];
   TripModel? _selectedTrip;
+  List<BookingModel> _tripBookings = [];
   bool _loading = false;
   String? _error;
 
   List<TripModel> get driverTrips => _driverTrips;
   TripModel? get selectedTrip => _selectedTrip;
+  List<BookingModel> get tripBookings => _tripBookings;
   bool get loading => _loading;
   String? get error => _error;
 
@@ -94,6 +97,7 @@ class TripProvider extends ChangeNotifier {
   }
 
   Future<bool> createTrip({
+    required String driverId,
     required String origin,
     required String destination,
     required List<Map<String, double>> routeCoordinates,
@@ -108,6 +112,7 @@ class TripProvider extends ChangeNotifier {
 
     try {
       await _apiClient.post(ApiEndpoints.trips, data: {
+        'driverId': driverId,
         'origin': origin,
         'destination': destination,
         'routeCoordinates': routeCoordinates,
@@ -157,6 +162,46 @@ class TripProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Failed to decline booking: $e');
+      return false;
+    }
+  }
+
+  Future<List<BookingModel>> loadTripBookings(String tripId) async {
+    try {
+      final response =
+          await _apiClient.get(ApiEndpoints.tripBookings(tripId));
+      final list = response.data as List?;
+      if (list != null) {
+        _tripBookings = list
+            .map((e) => BookingModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+        notifyListeners();
+        return _tripBookings;
+      }
+    } catch (e) {
+      debugPrint('Failed to load trip bookings: $e');
+    }
+    return [];
+  }
+
+  Future<bool> updateTrip(String tripId, Map<String, dynamic> data) async {
+    try {
+      await _apiClient.patch(ApiEndpoints.tripById(tripId), data: data);
+      return true;
+    } catch (e) {
+      debugPrint('Failed to update trip: $e');
+      return false;
+    }
+  }
+
+  Future<bool> deleteTrip(String tripId) async {
+    try {
+      await _apiClient.delete(ApiEndpoints.tripById(tripId));
+      _driverTrips.removeWhere((t) => t.id == tripId);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Failed to delete trip: $e');
       return false;
     }
   }

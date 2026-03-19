@@ -1,34 +1,131 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
+import '../../../../core/constants/enums.dart';
+import '../providers/booking_provider.dart';
 
-enum BookingStatus { pending, confirmed }
-
-class ActiveBookingScreen extends StatelessWidget {
+class ActiveBookingScreen extends StatefulWidget {
   final String tripId;
 
   const ActiveBookingScreen({super.key, required this.tripId});
 
   @override
+  State<ActiveBookingScreen> createState() => _ActiveBookingScreenState();
+}
+
+class _ActiveBookingScreenState extends State<ActiveBookingScreen> {
+  BookingModel? _booking;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadBooking();
+    });
+  }
+
+  Future<void> _loadBooking() async {
+    final provider = context.read<BookingProvider>();
+    if (provider.bookings.isEmpty) {
+      await provider.loadBookings();
+    }
+    if (!mounted) return;
+    final booking = provider.bookings
+        .where((b) => b.tripId == widget.tripId)
+        .where((b) =>
+            b.status == BookingStatus.pending ||
+            b.status == BookingStatus.confirmed)
+        .firstOrNull;
+    setState(() => _booking = booking);
+  }
+
+  void _onCancelBooking() {
+    final l10n = AppLocalizations.of(context)!;
+    final booking = _booking;
+    if (booking == null) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.cancelBooking),
+        content: const Text(
+          'Are you sure you want to cancel this booking?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              final success =
+                  await context.read<BookingProvider>().cancelBooking(booking.id);
+              if (mounted) {
+                if (success) {
+                  context.pop();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        context.read<BookingProvider>().error ??
+                            'Failed to cancel booking',
+                      ),
+                    ),
+                  );
+                }
+              }
+            },
+            child: Text(l10n.confirm),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final bookingProvider = context.watch<BookingProvider>();
+    final booking = _booking;
+    final loading = bookingProvider.loading && booking == null;
 
-    final booking = {
-      'status': BookingStatus.confirmed,
-      'driverName': 'Abebe Kebede',
-      'driverPhone': '+251911234567',
-      'conversationId': 'conv_$tripId',
-      'origin': 'Bole',
-      'destination': 'Megenagna',
-      'departureTime': '08:00 AM',
-      'pickupPoint': 'Bole Road, near Edna Mall',
-      'price': 45,
-    };
+    if (loading) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.myTrips)),
+        body: const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
 
-    final status = booking['status'] as BookingStatus;
+    if (booking == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.myTrips)),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Text(
+              'Booking not found',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final departureFormatted = booking.tripDepartureTime != null
+        ? DateFormat.jm().format(booking.tripDepartureTime!)
+        : '—';
+    final origin = booking.tripOrigin ?? '—';
+    final destination = booking.tripDestination ?? '—';
+    final pickupPoint = booking.pickUpPoint ?? origin;
+    final conversationId = 'trip_${booking.tripId}';
 
     return Scaffold(
       appBar: AppBar(
@@ -47,19 +144,23 @@ class ActiveBookingScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${booking['origin']} → ${booking['destination']}',
+                        '$origin → $destination',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      _StatusChip(status: status),
+                      _StatusChip(status: booking.status),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Icon(Icons.access_time, size: 16, color: AppColors.textSecondaryLight),
+                      Icon(
+                        Icons.access_time,
+                        size: 16,
+                        color: AppColors.textSecondaryLight,
+                      ),
                       const SizedBox(width: 6),
                       Text(
-                        '${l10n.departureTime}: ${booking['departureTime']}',
+                        '${l10n.departureTime}: $departureFormatted',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
@@ -67,11 +168,15 @@ class ActiveBookingScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondaryLight),
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 16,
+                        color: AppColors.textSecondaryLight,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          'Pickup: ${booking['pickupPoint']}',
+                          'Pickup: $pickupPoint',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
@@ -79,7 +184,7 @@ class ActiveBookingScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${booking['price']} ${l10n.etb}',
+                    '${booking.totalPrice.toStringAsFixed(0)} ${l10n.etb}',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w600,
@@ -99,11 +204,11 @@ class ActiveBookingScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    booking['driverName'] as String,
+                    booking.driverName ?? 'Driver',
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   Text(
-                    booking['driverPhone'] as String,
+                    'Contact via in-app chat',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.textSecondaryLight,
                         ),
@@ -115,49 +220,26 @@ class ActiveBookingScreen extends StatelessWidget {
             AppButton(
               text: l10n.liveTracking,
               icon: Icons.location_on,
-              onPressed: () => context.push('/tracking/$tripId'),
+              onPressed: () => context.push('/tracking/${widget.tripId}'),
             ),
             const SizedBox(height: 12),
             AppButton(
               text: l10n.chat,
               icon: Icons.chat_bubble_outline,
-              onPressed: () => context.push('/chat/${booking['conversationId']}'),
+              onPressed: () => context.push('/chat/$conversationId'),
               isOutlined: true,
             ),
             const SizedBox(height: 12),
             AppButton(
               text: l10n.sos,
               icon: Icons.emergency,
-              onPressed: () => context.push('/sos/$tripId'),
+              onPressed: () => context.push('/sos/${widget.tripId}'),
               backgroundColor: AppColors.sosRed,
             ),
             const SizedBox(height: 12),
             AppButton(
               text: l10n.cancelBooking,
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: Text(l10n.cancelBooking),
-                    content: const Text(
-                      'Are you sure you want to cancel this booking?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        child: Text(l10n.cancel),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
-                          context.pop();
-                        },
-                        child: Text(l10n.confirm),
-                      ),
-                    ],
-                  ),
-                );
-              },
+              onPressed: _onCancelBooking,
               isOutlined: true,
               foregroundColor: AppColors.error,
             ),
@@ -179,6 +261,8 @@ class _StatusChip extends StatelessWidget {
     final (label, color) = switch (status) {
       BookingStatus.pending => (l10n.bookingPending, AppColors.warning),
       BookingStatus.confirmed => (l10n.bookingConfirmed, AppColors.success),
+      BookingStatus.canceled => ('Canceled', AppColors.error),
+      BookingStatus.completed => ('Completed', AppColors.primary),
     };
 
     return Container(

@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../chat/providers/chat_provider.dart';
+import '../../notifications/providers/notification_provider.dart';
 import '../providers/auth_provider.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -52,6 +54,11 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     if (authProvider.isAuthenticated) {
+      final userId = authProvider.user?.id ?? '';
+      if (userId.isNotEmpty) {
+        context.read<ChatProvider>().setUserId(userId);
+        context.read<NotificationProvider>().setUserId(userId);
+      }
       final role = authProvider.user?.role.name ?? 'passenger';
       context.go(role == 'driver' ? '/driver' : '/passenger');
     } else {

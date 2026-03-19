@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/services/chapa_service.dart';
+import '../../../core/services/storage_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../driver/trip/providers/trip_provider.dart';
+import '../../driver/trip/providers/trip_series_provider.dart';
 import '../providers/payment_provider.dart';
 
 class SubscriptionScreen extends StatefulWidget {
@@ -20,13 +24,40 @@ class SubscriptionScreen extends StatefulWidget {
 
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   String _selectedPlan = 'weekly';
+  TripModel? _trip;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+  }
+
+  Future<void> _loadData() async {
+    final trip =
+        await context.read<TripProvider>().getTripById(widget.tripId);
+    if (mounted) {
+      setState(() {
+        _trip = trip;
+        _loading = false;
+      });
+    }
+  }
 
   Future<void> _handleSubscribe() async {
+    final trip = _trip;
+    if (trip == null || trip.seriesId == null) return;
+
     final authProvider = context.read<AuthProvider>();
     final paymentProvider = context.read<PaymentProvider>();
+    final seriesProvider = context.read<TripSeriesProvider>();
+    final storage = context.read<StorageService>();
     final user = authProvider.user;
 
-    final amount = _selectedPlan == 'weekly' ? '180' : '650';
+    final pricePerTrip = trip.pricePerSeat;
+    final amount = _selectedPlan == 'weekly'
+        ? (pricePerTrip * 5 * 0.8).toStringAsFixed(0)
+        : (pricePerTrip * 20 * 0.75).toStringAsFixed(0);
 
     final result = await paymentProvider.subscribeToTrip(
       context: context,
@@ -42,13 +73,24 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     if (!mounted) return;
 
     if (result.result == ChapaPaymentResult.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Subscription activated!'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-      context.pop();
+      final passengerId = await storage.getPassengerId();
+      if (passengerId != null) {
+        await seriesProvider.subscribe(
+          seriesId: trip.seriesId!,
+          passengerId: passengerId,
+          subscriptionType: _selectedPlan,
+          pricePerPeriod: double.tryParse(amount) ?? 0,
+        );
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Subscription activated!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        context.pop();
+      }
     } else if (result.result == ChapaPaymentResult.failed) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -63,6 +105,26 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final paymentProvider = context.watch<PaymentProvider>();
+
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.subscription)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final trip = _trip;
+    final route = trip != null
+        ? '${trip.origin} → ${trip.destination}'
+        : 'Trip';
+    final departure = trip != null
+        ? DateFormat.jm().format(trip.departureTime)
+        : '--:--';
+    final basePrice = trip?.pricePerSeat ?? 45;
+    final weeklyPrice = (basePrice * 5 * 0.8).toStringAsFixed(0);
+    final monthlyPrice = (basePrice * 20 * 0.75).toStringAsFixed(0);
+    final weeklyPerTrip = (basePrice * 0.8).toStringAsFixed(0);
+    final monthlyPerTrip = (basePrice * 0.75).toStringAsFixed(1);
 
     return Scaffold(
       appBar: AppBar(
@@ -91,7 +153,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           size: 20, color: AppColors.primary),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text('Bole → Megenagna',
+                        child: Text(route,
                             style: Theme.of(context).textTheme.bodyLarge),
                       ),
                     ],
@@ -103,7 +165,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           size: 18, color: AppColors.textSecondaryLight),
                       const SizedBox(width: 8),
                       Text(
-                        'Mon-Fri 08:00 AM',
+                        departure,
                         style: Theme.of(context)
                             .textTheme
                             .bodyMedium
@@ -143,7 +205,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '5 trips per week • Best for regular commuters',
+                      '5 trips per week • Save 20%',
                       style: Theme.of(context)
                           .textTheme
                           .bodySmall
@@ -151,7 +213,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      '180 ${l10n.etb}',
+                      '$weeklyPrice ${l10n.etb}',
                       style: Theme.of(context)
                           .textTheme
                           .headlineSmall
@@ -161,7 +223,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           ),
                     ),
                     Text(
-                      '36 ${l10n.etb}/trip',
+                      '$weeklyPerTrip ${l10n.etb}/trip',
                       style: Theme.of(context)
                           .textTheme
                           .bodySmall
@@ -200,7 +262,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '20 trips per month • Save up to 25%',
+                      '20 trips per month • Save 25%',
                       style: Theme.of(context)
                           .textTheme
                           .bodySmall
@@ -208,7 +270,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      '650 ${l10n.etb}',
+                      '$monthlyPrice ${l10n.etb}',
                       style: Theme.of(context)
                           .textTheme
                           .headlineSmall
@@ -218,7 +280,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           ),
                     ),
                     Text(
-                      '32.50 ${l10n.etb}/trip',
+                      '$monthlyPerTrip ${l10n.etb}/trip',
                       style: Theme.of(context)
                           .textTheme
                           .bodySmall

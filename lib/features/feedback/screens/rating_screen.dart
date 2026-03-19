@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../driver/trip/providers/trip_provider.dart';
+import '../providers/feedback_provider.dart';
 
 class RatingScreen extends StatefulWidget {
   final String tripId;
@@ -19,6 +23,18 @@ class _RatingScreenState extends State<RatingScreen> {
   double _rating = 0;
   final TextEditingController _commentController = TextEditingController();
   bool _showThankYou = false;
+  String? _toUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final trip = await context.read<TripProvider>().getTripById(widget.tripId);
+      if (mounted && trip != null) {
+        setState(() => _toUserId = trip.driverId);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -26,24 +42,54 @@ class _RatingScreenState extends State<RatingScreen> {
     super.dispose();
   }
 
-  void _submitRating() {
-    if (_rating < 1) return;
-    setState(() => _showThankYou = true);
+  Future<void> _submitRating() async {
+    if (_rating < 1 || _toUserId == null) return;
+
+    final feedbackProvider = context.read<FeedbackProvider>();
+    final authProvider = context.read<AuthProvider>();
+    final fromUserId = authProvider.user?.id ?? '';
+
+    final success = await feedbackProvider.submitRating(
+      tripId: widget.tripId,
+      fromUserId: fromUserId,
+      toUserId: _toUserId!,
+      rating: _rating.round(),
+      comment: _commentController.text.trim().isNotEmpty
+          ? _commentController.text.trim()
+          : null,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      setState(() => _showThankYou = true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(feedbackProvider.error ?? 'Failed to submit rating'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final feedbackProvider = context.watch<FeedbackProvider>();
 
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.rating),
       ),
-      body: _showThankYou ? _buildThankYouDialog(context) : _buildRatingForm(context, l10n),
+      body: _showThankYou
+          ? _buildThankYouDialog(context)
+          : _buildRatingForm(context, l10n, feedbackProvider),
     );
   }
 
-  Widget _buildRatingForm(BuildContext context, AppLocalizations l10n) {
+  Widget _buildRatingForm(
+      BuildContext context, AppLocalizations l10n, FeedbackProvider provider) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -82,7 +128,8 @@ class _RatingScreenState extends State<RatingScreen> {
           const SizedBox(height: 32),
           AppButton(
             text: l10n.submitRating,
-            onPressed: _submitRating,
+            onPressed: provider.submitting ? null : _submitRating,
+            isLoading: provider.submitting,
           ),
         ],
       ),
