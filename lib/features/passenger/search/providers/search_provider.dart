@@ -8,23 +8,110 @@ import '../../../driver/trip/models/trip_model.dart';
 
 enum SortMode { recommended, price, rating, time, seats }
 
+/// Sort order for the passenger ride-search browse list (name, price, rating only).
+enum BrowseSortMode { name, price, rating }
+
+/// Service tier filter for browse (price bands in ETB per seat).
+enum BrowseServiceTier { any, budget, standard, premium }
+
 class SearchProvider extends ChangeNotifier {
   final ApiClient _apiClient;
   final GebetaMapsService _mapsService;
 
   List<TripModel> _searchResults = [];
   List<TripModel> _sortedResults = [];
+  List<TripModel> _browseDriverTrips = [];
   bool _loading = false;
+  bool _browseLoading = false;
   String? _error;
+  String? _browseError;
   SortMode _sortMode = SortMode.recommended;
+  BrowseSortMode _browseSortMode = BrowseSortMode.rating;
+  bool _browseRecommendedOnly = false;
+  BrowseServiceTier _browseServiceTier = BrowseServiceTier.any;
+  double? _browseMinRating;
+  double _browsePriceFilterMin = 10;
+  double _browsePriceFilterMax = 200;
+
+  static const double browsePriceSliderMin = 10;
+  static const double browsePriceSliderMax = 200;
 
   double? _maxPrice;
   int? _minSeats;
   TimeOfDay? _preferredTime;
 
   List<TripModel> get searchResults => _sortedResults;
+  List<TripModel> get browseDriverTrips => _browseDriverTrips;
+  BrowseSortMode get browseSortMode => _browseSortMode;
+  bool get browseRecommendedOnly => _browseRecommendedOnly;
+  BrowseServiceTier get browseServiceTier => _browseServiceTier;
+  double? get browseMinRating => _browseMinRating;
+  double get browsePriceFilterMin => _browsePriceFilterMin;
+  double get browsePriceFilterMax => _browsePriceFilterMax;
+
+  /// Browse list after filters and sort (does not mutate stored browse data).
+  List<TripModel> get browseDriverTripsSorted {
+    var copy = List<TripModel>.from(_browseDriverTrips);
+
+    if (_browseRecommendedOnly) {
+      copy = copy
+          .where((t) => (t.driverRating ?? 0) >= 4.5 && t.seatsLeft >= 1)
+          .toList();
+    }
+    if (_browseMinRating != null) {
+      copy = copy
+          .where((t) => (t.driverRating ?? 0) >= _browseMinRating!)
+          .toList();
+    }
+    copy = copy
+        .where((t) =>
+            t.pricePerSeat >= _browsePriceFilterMin &&
+            t.pricePerSeat <= _browsePriceFilterMax)
+        .toList();
+
+    switch (_browseServiceTier) {
+      case BrowseServiceTier.budget:
+        copy = copy.where((t) => t.pricePerSeat < 45).toList();
+        break;
+      case BrowseServiceTier.standard:
+        copy = copy
+            .where((t) => t.pricePerSeat >= 45 && t.pricePerSeat <= 70)
+            .toList();
+        break;
+      case BrowseServiceTier.premium:
+        copy = copy.where((t) => t.pricePerSeat > 70).toList();
+        break;
+      case BrowseServiceTier.any:
+        break;
+    }
+
+    switch (_browseSortMode) {
+      case BrowseSortMode.name:
+        copy.sort((a, b) => (a.driverName ?? '')
+            .toLowerCase()
+            .compareTo((b.driverName ?? '').toLowerCase()));
+        break;
+      case BrowseSortMode.price:
+        copy.sort((a, b) => a.pricePerSeat.compareTo(b.pricePerSeat));
+        break;
+      case BrowseSortMode.rating:
+        copy.sort(
+            (a, b) => (b.driverRating ?? 0).compareTo(a.driverRating ?? 0));
+        break;
+    }
+    return copy;
+  }
+
+  /// Top picks for the horizontal "Recommended" strip.
+  List<TripModel> get recommendedBrowseTrips {
+    final sorted = browseDriverTripsSorted;
+    return sorted.take(8).toList();
+  }
+
   bool get loading => _loading;
+  bool get browseLoading => _browseLoading;
   String? get error => _error;
+  String? get browseError => _browseError;
   SortMode get sortMode => _sortMode;
   double? get maxPrice => _maxPrice;
   int? get minSeats => _minSeats;
@@ -33,6 +120,97 @@ class SearchProvider extends ChangeNotifier {
   int get totalResults => _searchResults.length;
 
   SearchProvider(this._apiClient, this._mapsService);
+
+  /// Loads scheduled trips and collapses to one representative trip per driver
+  /// (highest rating, then soonest departure), sorted by rating.
+  Future<void> loadBrowseDrivers() async {
+    _browseLoading = true;
+    _browseError = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.get(
+        ApiEndpoints.trips,
+        queryParameters: {'status': 'scheduled'},
+      );
+      final list = response.data as List?;
+      if (list != null && list.isNotEmpty) {
+        final trips = list
+            .map((e) => TripModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+        _browseDriverTrips = _dedupeByDriver(trips);
+      } else {
+        _browseDriverTrips = _dedupeByDriver(_fallbackResults);
+      }
+      _browseError = null;
+    } catch (e) {
+      debugPrint('Browse drivers failed: $e');
+      _browseError = 'Could not refresh driver list.';
+      _browseDriverTrips = _dedupeByDriver(_fallbackResults);
+    }
+
+    _browseLoading = false;
+    notifyListeners();
+  }
+
+  List<TripModel> _dedupeByDriver(List<TripModel> trips) {
+    final map = <String, TripModel>{};
+    for (final trip in trips) {
+      if (trip.driverId.isEmpty) continue;
+      final existing = map[trip.driverId];
+      if (existing == null) {
+        map[trip.driverId] = trip;
+      } else {
+        map[trip.driverId] = _preferRepresentativeTrip(existing, trip);
+      }
+    }
+    final out = map.values.toList();
+    out.sort((a, b) {
+      final ra = a.driverRating ?? 0;
+      final rb = b.driverRating ?? 0;
+      final c = rb.compareTo(ra);
+      if (c != 0) return c;
+      return a.departureTime.compareTo(b.departureTime);
+    });
+    return out;
+  }
+
+  TripModel _preferRepresentativeTrip(TripModel a, TripModel b) {
+    final ra = a.driverRating ?? 0;
+    final rb = b.driverRating ?? 0;
+    if (rb > ra) return b;
+    if (ra > rb) return a;
+    return a.departureTime.isBefore(b.departureTime) ? a : b;
+  }
+
+  void applyBrowseFilters({
+    required BrowseSortMode sort,
+    required bool recommendedOnly,
+    required BrowseServiceTier serviceTier,
+    double? minRating,
+    required double priceMin,
+    required double priceMax,
+  }) {
+    _browseSortMode = sort;
+    _browseRecommendedOnly = recommendedOnly;
+    _browseServiceTier = serviceTier;
+    _browseMinRating = minRating;
+    final lo = priceMin.clamp(browsePriceSliderMin, browsePriceSliderMax);
+    final hi = priceMax.clamp(browsePriceSliderMin, browsePriceSliderMax);
+    _browsePriceFilterMin = lo <= hi ? lo : hi;
+    _browsePriceFilterMax = lo <= hi ? hi : lo;
+    notifyListeners();
+  }
+
+  void resetBrowseFilters() {
+    _browseSortMode = BrowseSortMode.rating;
+    _browseRecommendedOnly = false;
+    _browseServiceTier = BrowseServiceTier.any;
+    _browseMinRating = null;
+    _browsePriceFilterMin = browsePriceSliderMin;
+    _browsePriceFilterMax = browsePriceSliderMax;
+    notifyListeners();
+  }
 
   Future<void> searchTrips({
     required String origin,

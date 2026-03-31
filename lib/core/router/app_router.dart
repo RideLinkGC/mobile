@@ -28,6 +28,7 @@ import '../../features/profile/screens/settings_screen.dart';
 import '../../features/profile/screens/verification_screen.dart';
 import '../../features/driver/trip/screens/create_series_screen.dart';
 import '../../features/passenger/booking/screens/my_subscriptions_screen.dart';
+import '../../features/passenger/booking/screens/passenger_bookings_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/emergency/screens/sos_screen.dart';
 import '../../features/feedback/screens/rating_screen.dart';
@@ -90,6 +91,14 @@ class AppRouter {
               builder: (context, state) => const ChatListScreen(),
             ),
             GoRoute(
+              path: '/passenger-bookings',
+              builder: (context, state) => const PassengerBookingsScreen(),
+            ),
+            GoRoute(
+              path: '/search',
+              builder: (context, state) => const SearchScreen(),
+            ),
+            GoRoute(
               path: '/notifications',
               builder: (context, state) => const NotificationsScreen(),
             ),
@@ -101,10 +110,6 @@ class AppRouter {
         ),
 
         // Full-screen routes
-        GoRoute(
-          path: '/search',
-          builder: (context, state) => const SearchScreen(),
-        ),
         GoRoute(
           path: '/search-results',
           builder: (context, state) {

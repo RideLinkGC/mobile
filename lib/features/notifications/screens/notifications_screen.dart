@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/shell_drawer_scope.dart';
 import '../../../core/widgets/app_card.dart';
 import '../providers/notification_provider.dart';
 
@@ -29,6 +30,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const ShellMenuButton(),
         title: Text(l10n.notifications),
         actions: [
           if (provider.unreadCount > 0)

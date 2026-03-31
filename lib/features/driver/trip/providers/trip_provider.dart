@@ -25,19 +25,44 @@ class TripProvider extends ChangeNotifier {
   bool get loading => _loading;
   String? get error => _error;
 
-  static final _mockTrips = [
+  /// Rich mock trips for passenger browse + driver demo (IDs must match search fallbacks).
+  static final List<TripModel> _mockTripCatalog = [
     TripModel(
       id: 't1',
-      driverId: 'demo-driver-001',
-      origin: 'Bole',
-      destination: 'Megenagna',
+      driverId: 'd1',
+      origin: 'Bole, Airport Main Gate Area',
+      destination: 'Megenagna, Megenagna Square',
       departureTime: DateTime.now().add(const Duration(hours: 1)),
       availableSeats: 4,
       pricePerSeat: 45,
       status: TripStatus.scheduled,
+      distanceKm: 11.2,
+      driverName: 'Abebe Kebede',
+      driverRating: 4.8,
+      vehicleModel: 'Silver Toyota Corolla',
+      vehiclePlate: 'AA-3-45231',
+      vehicleSeats: 4,
+      bookedSeats: 1,
     ),
     TripModel(
       id: 't2',
+      driverId: 'd2',
+      origin: 'Bole, Bole Medhanialem',
+      destination: 'Kazanchis, Inter Luxury Hotel Hub',
+      departureTime: DateTime.now().add(const Duration(hours: 2)),
+      availableSeats: 3,
+      pricePerSeat: 40,
+      status: TripStatus.scheduled,
+      distanceKm: 9.5,
+      driverName: 'Tigist Hailu',
+      driverRating: 4.5,
+      vehicleModel: 'Hyundai Tucson',
+      vehiclePlate: 'AA-1-88902',
+      vehicleSeats: 4,
+      bookedSeats: 0,
+    ),
+    TripModel(
+      id: 't3',
       driverId: 'demo-driver-001',
       origin: 'Kazanchis',
       destination: 'CMC',
@@ -45,8 +70,17 @@ class TripProvider extends ChangeNotifier {
       availableSeats: 3,
       pricePerSeat: 35,
       status: TripStatus.scheduled,
+      distanceKm: 14,
+      driverName: 'Demo Driver',
+      driverRating: 4.6,
+      vehicleModel: 'Toyota Vitz',
+      vehiclePlate: 'DD-9-10001',
+      vehicleSeats: 3,
+      bookedSeats: 0,
     ),
   ];
+
+  static final _mockTrips = _mockTripCatalog;
 
   TripProvider(this._apiClient, this._storage);
 
@@ -81,19 +115,76 @@ class TripProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Resolves a trip for the driver-details flow. Uses the API when available;
+  /// otherwise falls back to catalog mocks (t1, t2, …) or a synthetic trip for any id.
   Future<TripModel?> getTripById(String id) async {
+    _loading = true;
+    _error = null;
+    _selectedTrip = null;
+    notifyListeners();
+
+    TripModel? resolved;
+
     try {
       final response = await _apiClient.get(ApiEndpoints.tripById(id));
       final data = response.data as Map<String, dynamic>?;
-      if (data != null) {
-        _selectedTrip = TripModel.fromJson(data);
-        notifyListeners();
-        return _selectedTrip;
+      if (data != null && data.isNotEmpty) {
+        resolved = TripModel.fromJson(data);
       }
     } catch (e) {
-      debugPrint('Failed to load trip: $e');
+      debugPrint('Trip by id API failed (using mock): $e');
+    }
+
+    resolved ??= _mockTripFromCatalog(id) ?? _syntheticMockTrip(id);
+
+    _selectedTrip = resolved;
+    _loading = false;
+    notifyListeners();
+    return _selectedTrip;
+  }
+
+  static TripModel? _mockTripFromCatalog(String id) {
+    for (final t in _mockTripCatalog) {
+      if (t.id == id) return t;
     }
     return null;
+  }
+
+  static TripModel _syntheticMockTrip(String id) {
+    final h = id.hashCode.abs();
+    final names = [
+      'Elias Yosef',
+      'Abebe Kebede',
+      'Tigist Hailu',
+      'Solomon Bekele',
+    ];
+    final origins = [
+      'Bole, Airport Main Gate Area',
+      'Piassa, Historic District',
+      'CMC, Atlas Area',
+    ];
+    final dests = [
+      'Kazanchis, Inter Luxury Hotel Hub',
+      'Megenagna, Ring Road',
+      'Bole, Edna Mall',
+    ];
+    return TripModel(
+      id: id,
+      driverId: 'mock-driver-$h',
+      origin: origins[h % origins.length],
+      destination: dests[h % dests.length],
+      departureTime: DateTime.now().add(Duration(minutes: 20 + h % 180)),
+      availableSeats: 4,
+      pricePerSeat: 38 + (h % 6) * 4.0,
+      status: TripStatus.scheduled,
+      distanceKm: 6 + (h % 18).toDouble(),
+      driverName: names[h % names.length],
+      driverRating: 4.2 + (h % 8) / 10,
+      vehicleModel: 'Toyota Corolla',
+      vehiclePlate: 'AA-${(1000 + h % 8999).toString()}',
+      vehicleSeats: 4,
+      bookedSeats: h % 3,
+    );
   }
 
   Future<bool> createTrip({

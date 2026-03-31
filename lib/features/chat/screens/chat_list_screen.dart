@@ -3,6 +3,7 @@ import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/shell_drawer_scope.dart';
 import '../../../core/widgets/app_card.dart';
 import '../providers/chat_provider.dart';
 
@@ -30,6 +31,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const ShellMenuButton(),
         title: Text(l10n.chat),
       ),
       body: chatProvider.loadingConversations

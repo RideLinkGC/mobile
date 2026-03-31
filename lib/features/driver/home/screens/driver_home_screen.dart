@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/constants/enums.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/shell_drawer_scope.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../trip/providers/trip_provider.dart';
 
@@ -53,15 +54,28 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
+                padding: const EdgeInsets.fromLTRB(4, 8, 20, 0),
+                child: Row(
+                  children: [
+                    const ShellMenuButton(),
+                    Expanded(
+                      child: Text(
+                        '${l10n.home}, $driverName',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${l10n.home}, $driverName',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 24),
                     Row(
                       children: [
                         Expanded(

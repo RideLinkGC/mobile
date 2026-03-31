@@ -5,12 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/gebeta_map_widget.dart';
+import '../../../../core/widgets/shell_drawer_scope.dart';
 // ignore: unused_import
 import '../../../../core/widgets/rating_widget.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../passenger/booking/providers/booking_provider.dart';
+import '../../../passenger/booking/widgets/passenger_booking_card.dart';
 import '../../../../core/constants/enums.dart';
 
 class PassengerHomeScreen extends StatefulWidget {
@@ -64,6 +65,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const ShellMenuButton(),
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -121,7 +123,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
                           ),
                           const SizedBox(height: 20),
                           GestureDetector(
-                            onTap: () => context.push('/search'),
+                            onTap: () => context.go('/search'),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -168,7 +170,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
                                 style: Theme.of(context).textTheme.titleLarge,
                               ),
                               TextButton(
-                                onPressed: () => context.push('/search'),
+                                onPressed: () => context.go('/search'),
                                 child: const Text('See all'),
                               ),
                             ],
@@ -205,7 +207,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
                                   padding: const EdgeInsets.only(right: 12),
                                   child: SizedBox(
                                     width: 280,
-                                    child: _BookingCard(
+                                    child: PassengerBookingCard(
                                       booking: booking,
                                       l10n: l10n,
                                       onTap: () => context.push(
@@ -248,7 +250,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
                                 final booking = pastBookings[index];
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 12),
-                                  child: _BookingCard(
+                                  child: PassengerBookingCard(
                                     booking: booking,
                                     l10n: l10n,
                                     onTap: () => context.push(
@@ -265,128 +267,9 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
               ),
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/search'),
+        onPressed: () => context.go('/search'),
         child: const Icon(Icons.search),
       ),
     );
-  }
-}
-
-class _BookingCard extends StatelessWidget {
-  final BookingModel booking;
-  final AppLocalizations l10n;
-  final VoidCallback onTap;
-
-  const _BookingCard({
-    required this.booking,
-    required this.l10n,
-    required this.onTap,
-  });
-
-  String _statusLabel(BookingStatus status) {
-    switch (status) {
-      case BookingStatus.pending:
-        return 'Pending';
-      case BookingStatus.confirmed:
-        return 'Confirmed';
-      case BookingStatus.canceled:
-        return 'Canceled';
-      case BookingStatus.completed:
-        return 'Completed';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final origin =
-        booking.pickUpPoint ?? booking.tripOrigin ?? '—';
-    final destination =
-        booking.dropOffPoint ?? booking.tripDestination ?? '—';
-
-    return AppCard(
-      onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            booking.driverName ?? 'Driver',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(
-                Icons.location_on_outlined,
-                size: 16,
-                color: AppColors.primary,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  '$origin → $destination',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Text(
-                '${booking.totalPrice.toStringAsFixed(0)} ${l10n.etb}',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '${booking.seatsBooked} ${l10n.seats}',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.primary,
-                      ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _statusColor(booking.status)
-                      .withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  _statusLabel(booking.status),
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: _statusColor(booking.status),
-                        fontWeight: FontWeight.w500,
-                      ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _statusColor(BookingStatus status) {
-    switch (status) {
-      case BookingStatus.pending:
-        return Colors.orange;
-      case BookingStatus.confirmed:
-        return Colors.green;
-      case BookingStatus.canceled:
-        return Colors.red;
-      case BookingStatus.completed:
-        return AppColors.primary;
-    }
   }
 }

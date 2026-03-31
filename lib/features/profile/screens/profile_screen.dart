@@ -10,6 +10,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/rating_widget.dart';
+import '../../../core/widgets/shell_drawer_scope.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/models/user_model.dart';
 import '../../driver/trip/providers/trip_provider.dart';
@@ -32,10 +33,13 @@ class ProfileScreen extends StatelessWidget {
         }
 
         return Scaffold(
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
+          appBar: AppBar(
+            leading: const ShellMenuButton(),
+            title: Text(l10n.profile),
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _ProfileHeader(user: user),
@@ -58,7 +62,6 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-          ),
         );
       },
     );
