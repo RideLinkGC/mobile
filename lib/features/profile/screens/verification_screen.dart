@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_shadows.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -256,12 +257,15 @@ class _DocumentUploadCard extends StatelessWidget {
               ? AppColors.primary.withValues(alpha: 0.05)
               : AppColors.lightBackground,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: file != null
-                ? AppColors.primary
-                : AppColors.textHintLight.withValues(alpha: 0.3),
-            width: file != null ? 2 : 1,
-          ),
+          boxShadow: file != null
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.28),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : AppShadows.softCard(context),
         ),
         child: file != null
             ? Stack(

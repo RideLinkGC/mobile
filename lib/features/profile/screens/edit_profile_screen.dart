@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
@@ -217,10 +218,7 @@ class _ProfilePhotoPicker extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    width: 2,
-                  ),
+                  boxShadow: AppShadows.softElevated(context),
                 ),
                 child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
               ),

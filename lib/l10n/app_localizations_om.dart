@@ -203,6 +203,78 @@ class AppLocalizationsOm extends AppLocalizations {
   String get monthly => 'Ji\'aan';
 
   @override
+  String get bookingFrequency => 'Sadarkaa teessoo';
+
+  @override
+  String get oneTimeTrip => 'Yeroo tokko';
+
+  @override
+  String get numberOfSeats => 'Lakkoofsa teessoo';
+
+  @override
+  String get noSeatsAvailable => 'Imala kana irratti teessi hin jiru';
+
+  @override
+  String get recurringBookingNote =>
+      'Gaaffiin yeroo irraa gara yerootti mirkanaa\'ina konkolaachisaa irratti hunda\'ame.';
+
+  @override
+  String get passengerHomeHi => 'Akkam,';
+
+  @override
+  String get passengerHomeOnTheWay => 'Karaa irratti';
+
+  @override
+  String get passengerHomeActiveTrips => 'Imala hojii irratti kee';
+
+  @override
+  String get passengerHomeEnRouteHint =>
+      'Imala irratti · konkolaachisni fudhata kee irratti deemaa jira';
+
+  @override
+  String get passengerHomeOpenLiveView => 'Mul\'isa kallattii banaa';
+
+  @override
+  String get passengerBookingsTitle => 'Teessoo';
+
+  @override
+  String get bookingSectionAwaitingYou => 'Mirkanaa\'ina kee eegaa jira';
+
+  @override
+  String get bookingSectionPendingDriver =>
+      'Mirkanaa\'ina konkolaachisaa eegaa jira';
+
+  @override
+  String get bookingSectionActive => 'Hojii irratti fi kan dhufu';
+
+  @override
+  String get bookingKindAwaitingYou => 'Gocha kee';
+
+  @override
+  String get bookingKindPendingDriver => 'Konkolaachisaa eegaa';
+
+  @override
+  String get bookingKindActive => 'Mirkanaa\'e';
+
+  @override
+  String get recurrentTrip => 'Deebi\'aa';
+
+  @override
+  String get bookingEmptyAwaiting => 'Mirkanaa\'ina kee eegu waan hin jirre';
+
+  @override
+  String get bookingEmptyPending => 'Konkolaachisaatti gaaffiin hin ergamne';
+
+  @override
+  String get bookingEmptyActive => 'Imalli hojii irratti hin jiru';
+
+  @override
+  String get bookingAcceptedMessage => 'Teessoon mirkanaa\'e. Tole!';
+
+  @override
+  String get bookingCancelledMessage => 'Gaaffiin teessoo haqameera.';
+
+  @override
   String get subscribe => 'Miseensa ta\'i';
 
   @override
@@ -255,6 +327,12 @@ class AppLocalizationsOm extends AppLocalizations {
 
   @override
   String get km => 'km';
+
+  @override
+  String get verifyIdentity => 'Mallattoo mirkaneessi';
+
+  @override
+  String get mySubscriptions => 'Miseensota koo';
 
   @override
   String get pendingVerification =>

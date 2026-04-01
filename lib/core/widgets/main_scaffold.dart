@@ -1,10 +1,14 @@
+import 'package:curved_labeled_navigation_bar/curved_navigation_bar.dart';
+import 'package:curved_labeled_navigation_bar/curved_navigation_bar_item.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:ridelink/l10n/app_localizations.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/notifications/providers/notification_provider.dart';
+import '../services/locale_provider.dart';
 import '../theme/app_colors.dart';
-import 'connection_status_bar.dart';
+import '../theme/theme_provider.dart';
 import 'shell_drawer_scope.dart';
 
 class MainScaffold extends StatefulWidget {
@@ -23,106 +27,135 @@ class _MainScaffoldState extends State<MainScaffold> {
     _scaffoldKey.currentState?.openDrawer();
   }
 
-  int _shellIndex(BuildContext context, bool isDriver) {
-    final location = GoRouterState.of(context).matchedLocation;
-    if (isDriver) {
-      if (location.startsWith('/passenger') || location.startsWith('/driver')) {
-        return 0;
-      }
-      if (location.startsWith('/chat-list')) return 1;
-      if (location.startsWith('/notifications')) return 2;
-      if (location.startsWith('/profile')) return 3;
-      return 0;
-    }
-    if (location.startsWith('/passenger')) return 0;
-    if (location.startsWith('/chat-list')) return 1;
-    if (location.startsWith('/passenger-bookings')) return 2;
-    if (location.startsWith('/search')) return 3;
-    if (location.startsWith('/profile')) return 4;
-    return 0;
-  }
-
-  Widget _passengerDrawer(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    void go(String path) {
-      Navigator.of(context).pop();
-      context.go(path);
-    }
-
-    return Drawer(
-      backgroundColor: scheme.surface,
-      child: ListView(
-        padding: EdgeInsets.only(
-          top: MediaQuery.paddingOf(context).top + 16,
-          bottom: 16,
+  void _showLanguageSheet(BuildContext context) {
+    final localeProvider = context.read<LocaleProvider>();
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: LocaleProvider.supportedLocales.map((locale) {
+            final name =
+                LocaleProvider.localeNames[locale.languageCode] ??
+                    locale.languageCode;
+            final isSelected =
+                localeProvider.locale.languageCode == locale.languageCode;
+            return ListTile(
+              title: Text(name),
+              trailing: isSelected
+                  ? const Icon(Icons.check, color: AppColors.primary)
+                  : null,
+              onTap: () {
+                localeProvider.setLocale(locale);
+                Navigator.pop(ctx);
+              },
+            );
+          }).toList(),
         ),
-        children: [
-          ListTile(
-            leading: const Icon(Icons.home_outlined),
-            title: const Text('Home'),
-            onTap: () => go('/passenger'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.event_note_outlined),
-            title: const Text('Bookings'),
-            onTap: () => go('/passenger-bookings'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.directions_car_outlined),
-            title: const Text('Rides'),
-            onTap: () => go('/search'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.chat_bubble_outline),
-            title: const Text('Chat'),
-            onTap: () => go('/chat-list'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: const Text('Profile'),
-            onTap: () => go('/profile'),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _driverDrawer(BuildContext context) {
+  Widget _accountMenuDrawer(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
-    void go(String path) {
-      Navigator.of(context).pop();
-      context.go(path);
+    final iconColor =  scheme.primary;
+
+    void closeDrawer() => Navigator.of(context).pop();
+
+    void afterClose(VoidCallback action) {
+      closeDrawer();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        action();
+      });
     }
 
     return Drawer(
       backgroundColor: scheme.surface,
-      child: ListView(
-        padding: EdgeInsets.only(
-          top: MediaQuery.paddingOf(context).top + 16,
-          bottom: 16,
+      child: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.only(
+            top: MediaQuery.paddingOf(context).top + 8,
+            bottom: 16,
+          ),
+          children: [
+            ListTile(
+              leading:  Icon(
+                Icons.verified_user_outlined,
+                color: iconColor
+                ),
+              title: Text(l10n.verifyIdentity),
+              onTap: () => afterClose(() => context.push('/verification')),
+            ),
+            ListTile(
+              leading:  Icon(
+                Icons.repeat_rounded,
+                color: iconColor,
+                ),
+              title: Text(l10n.mySubscriptions),
+              onTap: () => afterClose(() => context.push('/my-subscriptions')),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.history,
+                color: iconColor,
+               ),
+              title: Text(l10n.paymentHistory),
+              onTap: () => afterClose(() => context.push('/payment-history')),
+            ),
+            ListTile(
+              leading:  Icon(
+                Icons.language_outlined,
+                color: iconColor,
+                ),
+              title: Text(l10n.language),
+              subtitle: Consumer<LocaleProvider>(
+                builder: (ctx, lp, _) => Text(
+                  LocaleProvider.localeNames[lp.locale.languageCode] ??
+                      lp.locale.languageCode,
+                  style: Theme.of(ctx).textTheme.bodySmall,
+                ),
+              ),
+              onTap: () => afterClose(() => _showLanguageSheet(context)),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.notifications_outlined,
+                color: iconColor,
+                ),
+              title: Text(l10n.notifications),
+              onTap: () => afterClose(() => context.go('/notifications')),
+            ),
+            Consumer<ThemeProvider>(
+              builder: (context, theme, _) {
+                return SwitchListTile(
+                  secondary: Icon(
+                    color: iconColor,
+                    theme.themeMode == ThemeMode.dark
+                        ? Icons.dark_mode_outlined
+                        : Icons.light_mode_outlined,
+                  ),
+                  title: Text(l10n.darkMode),
+                  value: theme.themeMode == ThemeMode.dark,
+                  onChanged: (_) => theme.toggleTheme(),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.logout, color: AppColors.error),
+              title: Text(
+                l10n.logout,
+                style: const TextStyle(color: AppColors.error),
+              ),
+              onTap: () async {
+                closeDrawer();
+                await context.read<AuthProvider>().logout();
+                if (context.mounted) context.go('/login');
+              },
+            ),
+          ],
         ),
-        children: [
-          ListTile(
-            leading: const Icon(Icons.home_outlined),
-            title: const Text('Home'),
-            onTap: () => go('/driver'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.chat_bubble_outline),
-            title: const Text('Chat'),
-            onTap: () => go('/chat-list'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.notifications_outlined),
-            title: const Text('Alerts'),
-            onTap: () => go('/notifications'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: const Text('Profile'),
-            onTap: () => go('/profile'),
-          ),
-        ],
       ),
     );
   }
@@ -132,12 +165,14 @@ class _MainScaffoldState extends State<MainScaffold> {
     final authProvider = context.watch<AuthProvider>();
     final notificationProvider = context.watch<NotificationProvider>();
     final isDriver = authProvider.isDriver;
-    final currentIdx = _shellIndex(context, isDriver);
+    int currentIdx = 0;
     final unread = notificationProvider.unreadCount;
     final scheme = Theme.of(context).colorScheme;
-    Color navIconColor(bool selected) => selected
-        ? AppColors.primary
-        : scheme.onSurface.withValues(alpha: 0.48);
+    final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontSize: 11,
+          letterSpacing: 0.2,
+        );
 
     void onPassengerTab(int index) {
       switch (index) {
@@ -157,6 +192,9 @@ class _MainScaffoldState extends State<MainScaffold> {
           context.go('/profile');
           break;
       }
+      setState(() {
+        currentIdx = index;
+      });
     }
 
     void onDriverTab(int index) {
@@ -174,106 +212,95 @@ class _MainScaffoldState extends State<MainScaffold> {
           context.go('/profile');
           break;
       }
+      setState(() {
+        currentIdx = index;
+      });
     }
 
-    final destinations = isDriver
-        ? <Widget>[
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined,
-                  color: navIconColor(currentIdx == 0)),
-              selectedIcon: const Icon(Icons.home, color: AppColors.primary),
+    final items = isDriver
+        ? <CurvedNavigationBarItem>[
+            CurvedNavigationBarItem(
               label: 'Home',
+              labelStyle: labelStyle,
+              child: const Icon(Icons.home_rounded,
+                  color: AppColors.primary, size: 26),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.chat_bubble_outline,
-                  color: navIconColor(currentIdx == 1)),
-              selectedIcon:
-                  const Icon(Icons.chat_bubble, color: AppColors.primary),
+            CurvedNavigationBarItem(
               label: 'Chat',
+              labelStyle: labelStyle,
+              child: const Icon(Icons.chat_rounded,
+                  color: AppColors.primary, size: 26),
             ),
-            NavigationDestination(
-              icon: Badge(
-                isLabelVisible: unread > 0,
-                label: Text('$unread'),
-                child: Icon(Icons.notifications_outlined,
-                    color: navIconColor(currentIdx == 2)),
-              ),
-              selectedIcon: Badge(
-                isLabelVisible: unread > 0,
-                label: Text('$unread'),
-                child:
-                    const Icon(Icons.notifications, color: AppColors.primary),
-              ),
+            CurvedNavigationBarItem(
               label: 'Alerts',
+              labelStyle: labelStyle,
+              child: Badge(
+                isLabelVisible: unread > 0,
+                label: Text('$unread'),
+                child: const Icon(Icons.notifications_rounded,
+                    color: AppColors.primary, size: 26),
+              ),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline,
-                  color: navIconColor(currentIdx == 3)),
-              selectedIcon: const Icon(Icons.person, color: AppColors.primary),
+            CurvedNavigationBarItem(
               label: 'Profile',
+              labelStyle: labelStyle,
+              child: const Icon(Icons.person_rounded,
+                  color: AppColors.primary, size: 26),
             ),
           ]
-        : <Widget>[
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined,
-                  color: navIconColor(currentIdx == 0)),
-              selectedIcon: const Icon(Icons.home, color: AppColors.primary),
+        : <CurvedNavigationBarItem>[
+            CurvedNavigationBarItem(
               label: 'Home',
+              labelStyle: labelStyle,
+              child: const Icon(Icons.home_rounded,
+                  color: AppColors.primary, size: 26),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.chat_bubble_outline,
-                  color: navIconColor(currentIdx == 1)),
-              selectedIcon:
-                  const Icon(Icons.chat_bubble, color: AppColors.primary),
+            CurvedNavigationBarItem(
               label: 'Chat',
+              labelStyle: labelStyle,
+              child: const Icon(Icons.chat_rounded,
+                  color: AppColors.primary, size: 26),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.event_note_outlined,
-                  color: navIconColor(currentIdx == 2)),
-              selectedIcon:
-                  const Icon(Icons.event_note, color: AppColors.primary),
+            CurvedNavigationBarItem(
               label: 'Bookings',
+              labelStyle: labelStyle,
+              child: const Icon(Icons.event_note_rounded,
+                  color: AppColors.primary, size: 26),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.directions_car_outlined,
-                  color: navIconColor(currentIdx == 3)),
-              selectedIcon:
-                  const Icon(Icons.directions_car, color: AppColors.primary),
+            CurvedNavigationBarItem(
               label: 'Rides',
+              labelStyle: labelStyle,
+              child: const Icon(Icons.directions_car_rounded,
+                  color: AppColors.primary, size: 26),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline,
-                  color: navIconColor(currentIdx == 4)),
-              selectedIcon: const Icon(Icons.person, color: AppColors.primary),
+            CurvedNavigationBarItem(
               label: 'Profile',
+              labelStyle: labelStyle,
+              child: const Icon(Icons.person_rounded,
+                  color: AppColors.primary, size: 26),
             ),
           ];
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: isDriver ? _driverDrawer(context) : _passengerDrawer(context),
-      body: Column(
-        children: [
-          const ConnectionStatusBar(),
-          Expanded(
-            child: ShellDrawerScope(
-              openDrawer: _openShellDrawer,
-              child: widget.child,
-            ),
-          ),
-        ],
+      drawer: _accountMenuDrawer(context),
+      body: ShellDrawerScope(
+        openDrawer: _openShellDrawer,
+        child: widget.child,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIdx,
-        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        surfaceTintColor: Colors.transparent,
-        elevation: 4,
-        height: 64,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        onDestinationSelected:
-            isDriver ? onDriverTab : onPassengerTab,
-        destinations: destinations,
+      bottomNavigationBar: SafeArea(
+        child: CurvedNavigationBar(
+          index: currentIdx,
+          items: items,
+          color: scheme.surface,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          buttonBackgroundColor: scheme.surface,
+          iconPadding: 10,
+          height: 72,
+          animationDuration: const Duration(milliseconds: 450),
+          animationCurve: Curves.easeOutCubic,
+          onTap: isDriver ? onDriverTab : onPassengerTab,
+        ),
       ),
     );
   }

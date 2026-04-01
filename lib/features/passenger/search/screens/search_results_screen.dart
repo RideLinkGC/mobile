@@ -4,6 +4,7 @@ import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/rating_widget.dart';
 import '../../../driver/trip/models/trip_model.dart';
@@ -443,8 +444,9 @@ class _FilterSheetState extends State<_FilterSheet> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.lightDivider),
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(10),
+                boxShadow: AppShadows.softCard(context),
               ),
               child: Row(
                 children: [

@@ -203,6 +203,77 @@ class AppLocalizationsAm extends AppLocalizations {
   String get monthly => 'Monthly';
 
   @override
+  String get bookingFrequency => 'Booking frequency';
+
+  @override
+  String get oneTimeTrip => 'One time';
+
+  @override
+  String get numberOfSeats => 'Number of seats';
+
+  @override
+  String get noSeatsAvailable => 'No seats available on this trip';
+
+  @override
+  String get recurringBookingNote =>
+      'Recurring requests are subject to driver confirmation.';
+
+  @override
+  String get passengerHomeHi => 'Hi,';
+
+  @override
+  String get passengerHomeOnTheWay => 'On the way';
+
+  @override
+  String get passengerHomeActiveTrips => 'Your active trips';
+
+  @override
+  String get passengerHomeEnRouteHint =>
+      'En route · driver is heading to your pickup';
+
+  @override
+  String get passengerHomeOpenLiveView => 'Open live view';
+
+  @override
+  String get passengerBookingsTitle => 'Bookings';
+
+  @override
+  String get bookingSectionAwaitingYou => 'Awaiting your confirmation';
+
+  @override
+  String get bookingSectionPendingDriver => 'Pending driver approval';
+
+  @override
+  String get bookingSectionActive => 'Active & upcoming';
+
+  @override
+  String get bookingKindAwaitingYou => 'Your action';
+
+  @override
+  String get bookingKindPendingDriver => 'Awaiting driver';
+
+  @override
+  String get bookingKindActive => 'Confirmed';
+
+  @override
+  String get recurrentTrip => 'Recurring';
+
+  @override
+  String get bookingEmptyAwaiting => 'Nothing waiting for your confirmation';
+
+  @override
+  String get bookingEmptyPending => 'No requests sent to drivers yet';
+
+  @override
+  String get bookingEmptyActive => 'No active trips';
+
+  @override
+  String get bookingAcceptedMessage => 'Booking confirmed. You\'re all set!';
+
+  @override
+  String get bookingCancelledMessage => 'Booking request cancelled.';
+
+  @override
   String get subscribe => 'Subscribe';
 
   @override
@@ -255,6 +326,12 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get km => 'km';
+
+  @override
+  String get verifyIdentity => 'Verify identity';
+
+  @override
+  String get mySubscriptions => 'My subscriptions';
 
   @override
   String get pendingVerification =>

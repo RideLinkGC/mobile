@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/rating_widget.dart';
@@ -39,6 +40,7 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
     if (comma > 0) {
       return (raw.substring(0, comma).trim(), raw.substring(comma + 1).trim());
     }
+  
     final arrow = raw.indexOf('→');
     if (arrow > 0) {
       return (raw.substring(0, arrow).trim(), raw.substring(arrow + 1).trim());
@@ -353,9 +355,7 @@ class _DriverProfileCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.35),
-        ),
+        boxShadow: AppShadows.softCard(context),
       ),
       child: Column(
         children: [
@@ -369,12 +369,11 @@ class _DriverProfileCard extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: scheme.primary.withValues(alpha: 0.45),
-                      blurRadius: 16,
-                      spreadRadius: 0,
+                      color: scheme.primary.withValues(alpha: 0.4),
+                      blurRadius: 20,
+                      spreadRadius: 2,
                     ),
                   ],
-                  border: Border.all(color: scheme.primary, width: 3),
                 ),
                 child: CircleAvatar(
                   radius: 48,
@@ -526,9 +525,7 @@ class _VehicleCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.35),
-        ),
+        boxShadow: AppShadows.softCard(context),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -610,9 +607,13 @@ class _FeatureChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.primary.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: scheme.primary.withValues(alpha: 0.35),
-        ),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: 0.22),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Text(
         label,
@@ -649,9 +650,7 @@ class _PlannedRouteCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.35),
-        ),
+        boxShadow: AppShadows.softCard(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -781,9 +780,7 @@ class _StatAccentCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.35),
-        ),
+        boxShadow: AppShadows.softCard(context),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -852,9 +849,7 @@ class _PickupTimeBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.35),
-        ),
+        boxShadow: AppShadows.softCard(context),
       ),
       child: Row(
         children: [

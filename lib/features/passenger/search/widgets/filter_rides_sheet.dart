@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_shadows.dart';
 import '../providers/search_provider.dart';
 
 /// Bottom sheet styled like the "Filter Rides" mock: filters + sort (name, price, rating only).
@@ -17,14 +18,13 @@ class FilterRidesSheet extends StatefulWidget {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        final scheme = Theme.of(ctx).colorScheme;
         return Padding(
           padding: EdgeInsets.only(top: h * 0.05),
           child: ClipRRect(
             borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(24)),
             child: Material(
-              color: scheme.surface,
+              color:Theme.of(context).scaffoldBackgroundColor,
               child: SizedBox(
                 height: h * 0.95,
                 child: const FilterRidesSheet(),
@@ -92,7 +92,7 @@ class _FilterRidesSheetState extends State<FilterRidesSheet> {
     final l10n = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = scheme.surfaceContainerHigh;
+    final cardBg = scheme.surfaceDim.withAlpha(125);
     final onMuted = scheme.onSurfaceVariant;
 
     return Column(
@@ -102,7 +102,7 @@ class _FilterRidesSheetState extends State<FilterRidesSheet> {
           width: 40,
           height: 4,
           decoration: BoxDecoration(
-            color: onMuted.withValues(alpha: 0.35),
+            color:onMuted.withValues(alpha: 0.35),
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -187,48 +187,7 @@ class _FilterRidesSheetState extends State<FilterRidesSheet> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
-              _sectionLabel(context, 'SERVICE CATEGORY'),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: _tierCard(
-                      context,
-                      icon: Icons.directions_car_outlined,
-                      title: 'Budget',
-                      subtitle: 'FROM 30 ${l10n.etb}',
-                      selected: _tier == BrowseServiceTier.budget,
-                      onTap: () => setState(
-                          () => _tier = BrowseServiceTier.budget),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _tierCard(
-                      context,
-                      icon: Icons.directions_car_filled_rounded,
-                      title: 'Standard',
-                      subtitle: 'FROM 45 ${l10n.etb}',
-                      selected: _tier == BrowseServiceTier.standard,
-                      onTap: () => setState(
-                          () => _tier = BrowseServiceTier.standard),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _tierCard(
-                      context,
-                      icon: Icons.star_rounded,
-                      title: 'Premium',
-                      subtitle: 'FROM 65 ${l10n.etb}',
-                      selected: _tier == BrowseServiceTier.premium,
-                      onTap: () => setState(
-                          () => _tier = BrowseServiceTier.premium),
-                    ),
-                  ),
-                ],
-              ),
+              
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton(
@@ -367,11 +326,9 @@ class _FilterRidesSheetState extends State<FilterRidesSheet> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
+        color: scheme.surfaceDim.withAlpha(125),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.35),
-        ),
+        boxShadow: AppShadows.softCard(context),
       ),
       child: child,
     );
@@ -395,23 +352,17 @@ class _FilterRidesSheetState extends State<FilterRidesSheet> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           decoration: BoxDecoration(
-            color: scheme.surfaceContainerHighest,
+            color: scheme.surfaceDim.withAlpha(125),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: selected
-                  ? scheme.primary
-                  : scheme.outlineVariant.withValues(alpha: 0.3),
-              width: selected ? 2 : 1,
-            ),
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.22),
-                      blurRadius: 10,
-                      spreadRadius: 0,
+                      color: scheme.primary.withValues(alpha: 0.32),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
                     ),
                   ]
-                : null,
+                : AppShadows.softCard(context),
           ),
           child: Stack(
             clipBehavior: Clip.none,
@@ -464,15 +415,16 @@ class _FilterRidesSheetState extends State<FilterRidesSheet> {
       onSelected: (_) => setState(() => _sort = mode),
       selectedColor: scheme.primary.withValues(alpha: 0.2),
       checkmarkColor: scheme.primary,
+      backgroundColor: scheme.surfaceDim.withAlpha(125),
       labelStyle: TextStyle(
         color: selected ? scheme.primary : scheme.onSurface,
         fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
       ),
       side: BorderSide(
-        color: selected ? scheme.primary : scheme.outlineVariant,
-        width: selected ? 2 : 1,
+        color: selected ? scheme.primary : Colors.transparent,
+        width: selected ? 2 : 0,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     );
   }
 
@@ -485,15 +437,9 @@ class _FilterRidesSheetState extends State<FilterRidesSheet> {
       onSelected: (_) => setState(() => _minRating = value),
       selectedColor: scheme.primary.withValues(alpha: 0.22),
       checkmarkColor: scheme.primary,
-      labelStyle: TextStyle(
-        color: selected ? scheme.primary : scheme.onSurface,
-        fontWeight: FontWeight.w600,
-      ),
-      backgroundColor: scheme.surfaceContainerHigh,
-      side: BorderSide(
-        color: selected ? scheme.primary : scheme.outlineVariant.withValues(alpha: 0.4),
-        width: selected ? 2 : 1,
-      ),
+      backgroundColor: scheme.surfaceDim.withAlpha(125),
+      labelStyle: TextStyle(color: selected ? scheme.primary : scheme.onSurface, fontWeight: FontWeight.w600),
+      side: BorderSide(color: selected ? scheme.primary : Colors.transparent, width: selected ? 2 : 0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     );
   }

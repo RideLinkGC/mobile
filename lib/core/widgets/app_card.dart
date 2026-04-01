@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_shadows.dart';
+
 class AppCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -22,13 +24,7 @@ class AppCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color ?? Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(borderRadius),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppShadows.softCard(context),
       ),
       child: Material(
         color: Colors.transparent,

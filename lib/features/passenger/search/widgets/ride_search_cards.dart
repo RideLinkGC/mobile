@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/widgets/rating_widget.dart';
 import '../../../driver/trip/models/trip_model.dart';
 
@@ -29,146 +30,120 @@ class RecommendedDriverCard extends StatelessWidget {
     final hasPhoto = imageUrl != null &&
         (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Ink(
-          width: 268,
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: scheme.outlineVariant.withValues(alpha: 0.35),
-            ),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _AvatarWithStatus(
-                          hasPhoto: hasPhoto,
-                          imageUrl: imageUrl,
-                          size: 52,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+    return InkWell(
+      onTap: onTap,
+      child: Ink(
+        width: 268,
+        
+        decoration: BoxDecoration(
+          color: scheme.surfaceDim.withAlpha(125),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: AppShadows.softElevated(context),
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _AvatarWithStatus(
+                        hasPhoto: hasPhoto,
+                        imageUrl: imageUrl,
+                        size: 52,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              trip.driverName ?? l10n.driver,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            if (trip.driverRating != null)
+                              Row(
+                                children: [
+                                  Icon(Icons.star_rounded,
+                                      size: 16, color: AppColors.ratingStar),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    trip.driverRating!.toStringAsFixed(1),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ],
+                              )
+                            else
                               Text(
-                                trip.driverName ?? l10n.driver,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleSmall
-                                    ?.copyWith(fontWeight: FontWeight.w600),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                '—',
+                                style:
+                                    Theme.of(context).textTheme.bodySmall,
                               ),
-                              const SizedBox(height: 4),
-                              if (trip.driverRating != null)
-                                Row(
-                                  children: [
-                                    Icon(Icons.star_rounded,
-                                        size: 16, color: AppColors.ratingStar),
-                                    const SizedBox(width: 2),
-                                    Text(
-                                      trip.driverRating!.toStringAsFixed(1),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                  ],
-                                )
-                              else
-                                Text(
-                                  '—',
-                                  style:
-                                      Theme.of(context).textTheme.bodySmall,
-                                ),
-                            ],
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Quickest route',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: scheme.primary,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.3,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${trip.origin} → ${trip.destination}',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      '${trip.pricePerSeat.toStringAsFixed(0)} ${l10n.etb}${l10n.perSeat}',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: scheme.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.schedule,
-                          size: 14,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          timeFmt.format(trip.departureTime),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: scheme.onSurfaceVariant,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              if (showBestMatch)
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: scheme.primary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'BEST MATCH',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: scheme.onPrimary,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.2,
-                          ),
-                    ),
+                      ),
+                    ],
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Quickest route',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: scheme.primary,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${trip.origin} → ${trip.destination}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '${trip.pricePerSeat.toStringAsFixed(0)} ${l10n.etb}${l10n.perSeat}',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: scheme.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.schedule,
+                        size: 14,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        timeFmt.format(trip.departureTime),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
             ],
-          ),
         ),
       ),
     );
@@ -196,174 +171,159 @@ class AvailableDriverRideCard extends StatelessWidget {
     final hasPhoto = imageUrl != null &&
         (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: scheme.outlineVariant.withValues(alpha: 0.35),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(
-                    alpha: Theme.of(context).brightness == Brightness.dark
-                        ? 0.35
-                        : 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _AvatarWithStatus(
-                      hasPhoto: hasPhoto,
-                      imageUrl: imageUrl,
-                      size: 56,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            trip.driverName ?? l10n.driver,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 6),
-                          if (trip.driverRating != null)
-                            Row(
-                              children: [
-                                AppRatingWidget(
-                                  rating: trip.driverRating!.clamp(0, 5),
-                                  size: 14,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  trip.driverRating!.toStringAsFixed(1),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelMedium
-                                      ?.copyWith(
-                                        color: scheme.onSurfaceVariant,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                              ],
-                            )
-                          else
-                            Text(
-                              'No rating yet',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(color: scheme.onSurfaceVariant),
-                            ),
-                          if (trip.vehicleModel != null ||
-                              trip.vehiclePlate != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              [trip.vehicleModel, trip.vehiclePlate]
-                                  .whereType<String>()
-                                  .where((s) => s.isNotEmpty)
-                                  .join(' · '),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(color: scheme.onSurfaceVariant),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: scheme.surfaceDim.withAlpha(125),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: AppShadows.softCard(context),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _AvatarWithStatus(
+                    hasPhoto: hasPhoto,
+                    imageUrl: imageUrl,
+                    size: 56,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${trip.pricePerSeat.toStringAsFixed(0)} ${l10n.etb}',
-                          style:
-                              Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    color: scheme.primary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                          trip.driverName ?? l10n.driver,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
+                        const SizedBox(height: 6),
+                        if (trip.driverRating != null)
+                          Row(
+                            children: [
+                              AppRatingWidget(
+                                rating: trip.driverRating!.clamp(0, 5),
+                                size: 14,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                trip.driverRating!.toStringAsFixed(1),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelMedium
+                                    ?.copyWith(
+                                      color: scheme.onSurfaceVariant,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            ],
+                          )
+                        else
+                          Text(
+                            'No rating yet',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: scheme.onSurfaceVariant),
+                          ),
+                        if (trip.vehicleModel != null ||
+                            trip.vehiclePlate != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            [trip.vehicleModel, trip.vehiclePlate]
+                                .whereType<String>()
+                                .where((s) => s.isNotEmpty)
+                                .join(' · '),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: scheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${trip.pricePerSeat.toStringAsFixed(0)} ${l10n.etb}',
+                        style:
+                            Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  color: scheme.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                      ),
+                      Text(
+                        l10n.perSeat,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: scheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  children: [
+                    _RouteTimeline(
+                      origin: trip.origin,
+                      destination: trip.destination,
+                      color: scheme.primary,
+                      mutedColor: scheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 16,
+                          color: scheme.primary,
+                        ),
+                        const SizedBox(width: 6),
                         Text(
-                          l10n.perSeat,
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          timeFmt.format(trip.departureTime),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(
                                 color: scheme.primary,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${trip.seatsLeft} ${l10n.seats} left',
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelLarge
+                              ?.copyWith(
+                                color: scheme.primary,
+                                fontWeight: FontWeight.w600,
                               ),
                         ),
                       ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Column(
-                    children: [
-                      _RouteTimeline(
-                        origin: trip.origin,
-                        destination: trip.destination,
-                        color: scheme.primary,
-                        mutedColor: scheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            size: 16,
-                            color: scheme.primary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            timeFmt.format(trip.departureTime),
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: scheme.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            '${trip.seatsLeft} ${l10n.seats} left',
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelLarge
-                                ?.copyWith(
-                                  color: scheme.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -410,10 +370,13 @@ class _AvatarWithStatus extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.success,
               shape: BoxShape.circle,
-              border: Border.all(
-                color: scheme.surfaceContainerHigh,
-                width: 2,
-              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
           ),
         ),

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import '../../../core/constants/enums.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_shadows.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
@@ -287,10 +288,15 @@ class _RoleCard extends StatelessWidget {
               ? AppColors.primary.withValues(alpha: 0.06)
               : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.lightDivider,
-            width: isSelected ? 2 : 1,
-          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.28),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : AppShadows.softCard(context),
         ),
         child: Row(
           children: [

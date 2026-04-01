@@ -484,6 +484,144 @@ abstract class AppLocalizations {
   /// **'Monthly'**
   String get monthly;
 
+  /// No description provided for @bookingFrequency.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking frequency'**
+  String get bookingFrequency;
+
+  /// No description provided for @oneTimeTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'One time'**
+  String get oneTimeTrip;
+
+  /// No description provided for @numberOfSeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Number of seats'**
+  String get numberOfSeats;
+
+  /// No description provided for @noSeatsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No seats available on this trip'**
+  String get noSeatsAvailable;
+
+  /// No description provided for @recurringBookingNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring requests are subject to driver confirmation.'**
+  String get recurringBookingNote;
+
+  /// No description provided for @passengerHomeHi.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi,'**
+  String get passengerHomeHi;
+
+  /// No description provided for @passengerHomeOnTheWay.
+  ///
+  /// In en, this message translates to:
+  /// **'On the way'**
+  String get passengerHomeOnTheWay;
+
+  /// No description provided for @passengerHomeActiveTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'Your active trips'**
+  String get passengerHomeActiveTrips;
+
+  /// No description provided for @passengerHomeEnRouteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'En route · driver is heading to your pickup'**
+  String get passengerHomeEnRouteHint;
+
+  /// No description provided for @passengerHomeOpenLiveView.
+  ///
+  /// In en, this message translates to:
+  /// **'Open live view'**
+  String get passengerHomeOpenLiveView;
+
+  /// No description provided for @passengerBookingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookings'**
+  String get passengerBookingsTitle;
+
+  /// No description provided for @bookingSectionAwaitingYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting your confirmation'**
+  String get bookingSectionAwaitingYou;
+
+  /// No description provided for @bookingSectionPendingDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending driver approval'**
+  String get bookingSectionPendingDriver;
+
+  /// No description provided for @bookingSectionActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active & upcoming'**
+  String get bookingSectionActive;
+
+  /// No description provided for @bookingKindAwaitingYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Your action'**
+  String get bookingKindAwaitingYou;
+
+  /// No description provided for @bookingKindPendingDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting driver'**
+  String get bookingKindPendingDriver;
+
+  /// No description provided for @bookingKindActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get bookingKindActive;
+
+  /// No description provided for @recurrentTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring'**
+  String get recurrentTrip;
+
+  /// No description provided for @bookingEmptyAwaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing waiting for your confirmation'**
+  String get bookingEmptyAwaiting;
+
+  /// No description provided for @bookingEmptyPending.
+  ///
+  /// In en, this message translates to:
+  /// **'No requests sent to drivers yet'**
+  String get bookingEmptyPending;
+
+  /// No description provided for @bookingEmptyActive.
+  ///
+  /// In en, this message translates to:
+  /// **'No active trips'**
+  String get bookingEmptyActive;
+
+  /// No description provided for @bookingAcceptedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking confirmed. You\'re all set!'**
+  String get bookingAcceptedMessage;
+
+  /// No description provided for @bookingCancelledMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking request cancelled.'**
+  String get bookingCancelledMessage;
+
   /// No description provided for @subscribe.
   ///
   /// In en, this message translates to:
@@ -585,6 +723,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'km'**
   String get km;
+
+  /// No description provided for @verifyIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify identity'**
+  String get verifyIdentity;
+
+  /// No description provided for @mySubscriptions.
+  ///
+  /// In en, this message translates to:
+  /// **'My subscriptions'**
+  String get mySubscriptions;
 
   /// No description provided for @pendingVerification.
   ///

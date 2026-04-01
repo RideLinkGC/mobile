@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/services/gebeta_maps_service.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/gebeta_map_widget.dart';
 import '../../../../core/widgets/location_search_field.dart';
@@ -181,11 +182,9 @@ class _SearchScreenState extends State<SearchScreen> {
     final auth = context.watch<AuthProvider>();
     final user = auth.user;
     final userImage = user?.image;
-    final hasUserPhoto = userImage != null &&
-        (userImage.startsWith('http://') || userImage.startsWith('https://'));
-
+ 
     return Scaffold(
-      backgroundColor: scheme.surface,
+      appBar:AppBar(title: Text("Find Rides"),centerTitle: true,),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openPlanRideSheet(l10n),
         backgroundColor: scheme.primary,
@@ -207,41 +206,7 @@ class _SearchScreenState extends State<SearchScreen> {
               controller: _scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-                    child: Row(
-                      children: [
-                        const ShellMenuButton(),
-                        Expanded(
-                          child: Text(
-                            'Ride Search',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: 'Profile',
-                          onPressed: () => context.go('/profile'),
-                          icon: CircleAvatar(
-                            radius: 18,
-                            backgroundColor:
-                                scheme.primary.withValues(alpha: 0.15),
-                            backgroundImage:
-                                hasUserPhoto ? NetworkImage(userImage) : null,
-                            child: hasUserPhoto
-                                ? null
-                                : Icon(Icons.person_rounded,
-                                    size: 20, color: scheme.primary),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   sliver: SliverToBoxAdapter(
@@ -347,10 +312,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                   color: scheme.surfaceContainerHigh
                                       .withValues(alpha: 0.92),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: scheme.outlineVariant
-                                        .withValues(alpha: 0.4),
-                                  ),
+                                  boxShadow: AppShadows.softElevated(context),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,

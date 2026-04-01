@@ -61,6 +61,8 @@ class BookingProvider extends ChangeNotifier {
     required double totalPrice,
     String? pickUpPoint,
     String? dropOffPoint,
+    /// `one_time` | `weekly` | `monthly` — sent to API when supported.
+    String recurrence = 'one_time',
   }) async {
     _loading = true;
     _error = null;
@@ -74,6 +76,7 @@ class BookingProvider extends ChangeNotifier {
           'passengerId': passengerId,
           'seatsBooked': seatsBooked,
           'totalPrice': totalPrice,
+          'recurrence': recurrence,
           if (pickUpPoint != null) 'pickUpPoint': pickUpPoint,
           if (dropOffPoint != null) 'dropOffPoint': dropOffPoint,
         },

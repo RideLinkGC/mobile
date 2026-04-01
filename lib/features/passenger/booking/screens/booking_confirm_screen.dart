@@ -14,6 +14,16 @@ import '../../../../core/services/storage_service.dart';
 import '../../../driver/trip/providers/trip_provider.dart';
 import '../providers/booking_provider.dart';
 
+enum _BookingRecurrence { oneTime, weekly, monthly }
+
+extension on _BookingRecurrence {
+  String get apiValue => switch (this) {
+        _BookingRecurrence.oneTime => 'one_time',
+        _BookingRecurrence.weekly => 'weekly',
+        _BookingRecurrence.monthly => 'monthly',
+      };
+}
+
 class BookingConfirmScreen extends StatefulWidget {
   final String tripId;
 
@@ -32,7 +42,9 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
   final _pickupLatLng = const LatLng(9.0192, 38.7525);
   final _dropoffLatLng = const LatLng(9.0300, 38.7800);
 
-  static const int _seats = 1;
+  int _seats = 1;
+  _BookingRecurrence _recurrence = _BookingRecurrence.oneTime;
+
   static const int _platformFee = 5;
 
   List<MapMarker> get _markers {
@@ -86,15 +98,26 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
 
     final pickUpPoint = _pickupResult?.name ?? trip.origin;
     final dropOffPoint = _dropoffResult?.name ?? trip.destination;
-    final totalPrice = trip.pricePerSeat * _seats;
+    final maxSeats = trip.seatsLeft;
+    if (maxSeats < 1) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.noSeatsAvailable)),
+        );
+      }
+      return;
+    }
+    final seatsBooked = _seats.clamp(1, maxSeats);
+    final totalPrice = trip.pricePerSeat * seatsBooked;
 
     final success = await bookingProvider.requestBooking(
           tripId: widget.tripId,
           passengerId: passengerId,
-          seatsBooked: _seats,
+          seatsBooked: seatsBooked,
           totalPrice: totalPrice,
           pickUpPoint: pickUpPoint,
           dropOffPoint: dropOffPoint,
+          recurrence: _recurrence.apiValue,
         );
 
     if (!mounted) return;
@@ -151,9 +174,18 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
       );
     }
 
-    final subtotal = trip.pricePerSeat * _seats;
-    final total = subtotal + _platformFee;
+    final maxSeats = trip.seatsLeft;
+    final seatsForPrice = maxSeats < 1 ? 0 : _seats.clamp(1, maxSeats);
+    final subtotal =
+        maxSeats < 1 ? 0.0 : trip.pricePerSeat * seatsForPrice;
+    final total = maxSeats < 1 ? 0.0 : subtotal + _platformFee;
     final departureFormatted = DateFormat.jm().format(trip.departureTime);
+
+    if (maxSeats >= 1 && _seats > maxSeats) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _seats = maxSeats);
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -178,12 +210,14 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
             ),
             const SizedBox(height: 16),
             AppCard(
+              color: Theme.of(context).colorScheme.surface.withAlpha(100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Trip Summary',
                     style: Theme.of(context).textTheme.titleMedium,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -200,7 +234,9 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '${trip.origin} → ${trip.destination}',
+                        maxLines: 2,
+                        '${trip.origin} →\n ${trip.destination}',
+                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
@@ -243,6 +279,114 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
             ),
             const SizedBox(height: 24),
             AppCard(
+              color: Theme.of(context).colorScheme.surface.withAlpha(100),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.bookingFrequency,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 12),
+                  SegmentedButton<_BookingRecurrence>(
+                    showSelectedIcon: false,
+                    style: SegmentedButton.styleFrom(
+                    
+                      selectedBackgroundColor: AppColors.primary,
+                      selectedForegroundColor: AppColors.lightBackground,
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      foregroundColor: Theme.of(context).colorScheme.onSurface,
+                      disabledBackgroundColor: AppColors.lightSurface,
+                      disabledForegroundColor: AppColors.textSecondaryLight,
+                      side: BorderSide(color: Theme.of(context).colorScheme.surfaceDim),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    segments: [
+                      ButtonSegment(
+                        value: _BookingRecurrence.oneTime,
+                        label: Text(l10n.oneTimeTrip),
+                      ),
+                      ButtonSegment(
+                        value: _BookingRecurrence.weekly,
+                        label: Text(l10n.weekly),
+                      ),
+                      ButtonSegment(
+                        value: _BookingRecurrence.monthly,
+                        label: Text(l10n.monthly),
+                      ),
+                    ],
+                    selected: {_recurrence},
+                    onSelectionChanged: (next) {
+                      setState(() => _recurrence = next.first);
+                    },
+                  ),
+                  if (_recurrence != _BookingRecurrence.oneTime) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      l10n.recurringBookingNote,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondaryLight,
+                          ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  Text(
+                    l10n.numberOfSeats,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '$seatsForPrice / $maxSeats ${l10n.seats}',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                      IconButton.filled(
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                          foregroundColor: AppColors.primary,
+                          disabledBackgroundColor:
+                              AppColors.textSecondaryLight.withValues(alpha: 0.12),
+                        ),
+                        onPressed: maxSeats < 1 || _seats <= 1
+                            ? null
+                            : () => setState(() => _seats--),
+                        icon: const Icon(Icons.remove, size: 20),
+                      ),
+                      IconButton.filled(
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                          foregroundColor: AppColors.primary,
+                          disabledBackgroundColor:
+                              AppColors.textSecondaryLight.withValues(alpha: 0.12),
+                        ),
+                        onPressed: maxSeats < 1 || _seats >= maxSeats
+                            ? null
+                            : () => setState(() => _seats++),
+                        icon: const Icon(Icons.add, size: 20),
+                      ),
+                    ],
+                  ),
+                  if (maxSeats < 1)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        l10n.noSeatsAvailable,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.error,
+                            ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            AppCard(
+              color: Theme.of(context).colorScheme.surface.withAlpha(100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -253,7 +397,7 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
                   const SizedBox(height: 12),
                   _PriceRow(
                     label:
-                        '${trip.pricePerSeat.toStringAsFixed(0)} ${l10n.etb} × $_seats ${l10n.seats}',
+                        '${trip.pricePerSeat.toStringAsFixed(0)} ${l10n.etb} × $seatsForPrice ${l10n.seats}',
                     value: '$subtotal ${l10n.etb}',
                   ),
                   const SizedBox(height: 8),
@@ -273,9 +417,10 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
             const SizedBox(height: 24),
             AppButton(
               text: l10n.confirm,
-              onPressed: _isConfirming ? null : _onConfirm,
+              onPressed: (_isConfirming || maxSeats < 1) ? null : _onConfirm,
               isLoading: _isConfirming,
             ),
+            SizedBox(height: MediaQuery.of(context).padding.bottom),
           ],
         ),
       ),
