@@ -2,7 +2,7 @@ class AppConstants {
   AppConstants._();
 
   static const String appName = 'RideLink';
-  static const String baseUrl = 'http://10.0.2.2:5000/api';
+  static const String baseUrl = 'https://backend-way5.onrender.com/api';
   static const String convexUrl = 'https://resilient-crane-323.eu-west-1.convex.cloud';
 
   // Gebeta Maps

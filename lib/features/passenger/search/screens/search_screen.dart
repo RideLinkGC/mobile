@@ -184,7 +184,10 @@ class _SearchScreenState extends State<SearchScreen> {
     final userImage = user?.image;
  
     return Scaffold(
-      appBar:AppBar(title: Text("Find Rides"),centerTitle: true,),
+      appBar:AppBar(
+        title: Text("Find Rides"),centerTitle: true,
+        leading: const ShellMenuButton(),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openPlanRideSheet(l10n),
         backgroundColor: scheme.primary,

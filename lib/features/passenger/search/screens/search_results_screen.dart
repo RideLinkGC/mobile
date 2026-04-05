@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:ridelink/core/widgets/shell_drawer_scope.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -59,6 +60,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const ShellMenuButton(),
         title: Text('${widget.origin} → ${widget.destination}'),
         actions: [
           IconButton(

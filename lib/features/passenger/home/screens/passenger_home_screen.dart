@@ -148,11 +148,6 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
-            tooltip: l10n.searchRide,
-            onPressed: () => context.go('/search'),
-          ),
-          IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () => context.push('/notifications'),
           ),

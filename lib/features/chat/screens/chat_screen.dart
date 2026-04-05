@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:ridelink/core/widgets/shell_drawer_scope.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../providers/chat_provider.dart';
@@ -60,7 +61,9 @@ class _ChatScreenPageState extends State<ChatScreenPage> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const ShellMenuButton(),
         title: const Text('Chat'),
+        actions: [],
       ),
       body: Column(
         children: [

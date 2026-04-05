@@ -118,15 +118,14 @@ class AuthProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      // Step 1: Sign up with Better Auth (includes additional fields)
+      // POST /api/auth/sign-up/email
       final signUpResponse = await _apiClient.post(
         ApiEndpoints.signUp,
         data: {
-          'name': name,
           'email': email,
           'password': password,
-          'phone': phone,
-          'nationalId': nationalId ?? '',
+          'name': name,
+          'phone': phone
         },
       );
 
@@ -139,25 +138,20 @@ class AuthProvider extends ChangeNotifier {
         await _storage.saveAccessToken(sessionToken);
       }
 
-      // Step 2: Complete profile if additional info needed
-      if (phone.isNotEmpty || (nationalId != null && nationalId.isNotEmpty)) {
+      // Optional: national ID (not part of sign-up body)
+      if (nationalId != null && nationalId.isNotEmpty) {
         try {
           await _apiClient.patch(
             ApiEndpoints.completeProfile,
-            data: {
-              'phone': phone,
-              if (nationalId != null && nationalId.isNotEmpty)
-                'nationalId': nationalId,
-            },
+            data: {'nationalId': nationalId},
           );
         } catch (e) {
           debugPrint('Complete profile step: $e');
         }
       }
 
-      // Step 3: If registering as driver, call become-driver
+      // If registering as driver, attach vehicle info when provided
       if (role == UserRole.driver &&
-          licenseNumber != null &&
           vehicleModel != null &&
           vehiclePlate != null &&
           vehicleSeats != null) {
@@ -165,7 +159,8 @@ class AuthProvider extends ChangeNotifier {
           await _apiClient.post(
             ApiEndpoints.becomeDriver,
             data: {
-              'licenseNumber': licenseNumber,
+              if (licenseNumber != null && licenseNumber.isNotEmpty)
+                'licenseNumber': licenseNumber,
               'vehicleModel': vehicleModel,
               'vehiclePlate': vehiclePlate,
               'vehicleSeats': vehicleSeats,

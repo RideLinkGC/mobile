@@ -12,8 +12,10 @@ class ApiClient {
     _dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.baseUrl,
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 15),
+        // LAN / dev servers may be slow to accept connections; 15s often false-positives.
+        connectTimeout: const Duration(seconds: 45),
+        sendTimeout: const Duration(seconds: 45),
+        receiveTimeout: const Duration(seconds: 45),
         headers: {'Content-Type': 'application/json'},
       ),
     );
@@ -46,7 +48,8 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
   }) async {
     try {
-      return await _dio.post(path, data: data, queryParameters: queryParameters);
+      final result = await _dio.post(path, data: data, queryParameters: queryParameters);
+      return result;
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -106,7 +109,10 @@ class ApiClient {
       case DioExceptionType.receiveTimeout:
       case DioExceptionType.connectionError:
         return NetworkException(
-            message: 'Connection timed out. Please check your internet.');
+          message: 'Could not reach the server. Check that it is running, '
+              'your phone and PC are on the same network, and the API base URL '
+              '(${AppConstants.baseUrl}) is correct.',
+        );
       case DioExceptionType.badResponse:
         final statusCode = e.response?.statusCode;
         final data = e.response?.data;

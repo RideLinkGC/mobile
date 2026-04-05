@@ -47,6 +47,8 @@ class AppTextField extends StatelessWidget {
       inputFormatters: inputFormatters,
       style: Theme.of(context).textTheme.bodyLarge,
       decoration: InputDecoration(
+        fillColor: Colors.transparent,
+        filled: true,
         hintText: hintText,
         labelText: labelText,
         prefixIcon: prefixIcon != null
