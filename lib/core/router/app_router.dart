@@ -77,11 +77,24 @@ class AppRouter {
         ),
         GoRoute(
           path: '/register/driver-setup',
-          builder: (context, state) => const DriverSetupScreen(),
+          builder: (context, state) {
+            final extra = state.extra;
+            final licenseId = extra is Map
+                ? (extra['licenseDocumentId'] as String?)
+                : null;
+            if (licenseId == null || licenseId.isEmpty) {
+              // Missing required doc: go back to upload step.
+              return const DriverDocumentsScreen();
+            }
+            return DriverSetupScreen(licenseDocumentId: licenseId);
+          },
         ),
         GoRoute(
           path: '/register/driver-documents',
-          builder: (context, state) => const DriverDocumentsScreen(),
+          builder: (context, state) {
+            final done = state.uri.queryParameters['done'] == '1';
+            return DriverDocumentsScreen(isAfterDriverSetup: done);
+          },
         ),
 
         // Passenger shell

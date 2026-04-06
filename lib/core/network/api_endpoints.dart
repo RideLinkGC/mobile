@@ -11,6 +11,8 @@ class ApiEndpoints {
   // User
   static const String completeProfile = '/users/complete-profile';
   static const String becomeDriver = '/users/become-driver';
+  // Uploads (presigned URLs)
+  static const String presignUpload = '/upload';
 
   // Trips
   static const String trips = '/trips';

@@ -52,7 +52,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (success) {
       if (_selectedRole == UserRole.driver) {
-        context.go('/register/driver-setup');
+        context.go('/register/driver-documents');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

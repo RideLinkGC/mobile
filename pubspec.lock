@@ -137,6 +137,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.1"
+  cookie_jar:
+    dependency: "direct main"
+    description:
+      name: cookie_jar
+      sha256: "963da02c1ef64cb5ac20de948c9e5940aa351f1e34a12b1d327c83d85b7e8fff"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.9"
   cross_file:
     dependency: transitive
     description:
@@ -193,6 +201,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.9.1"
+  dio_cookie_manager:
+    dependency: "direct main"
+    description:
+      name: dio_cookie_manager
+      sha256: "0db1a7b997a0455e488ac35744c68eed3f2a4280d3ab531835a65641b0a08744"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.4.0"
   dio_web_adapter:
     dependency: transitive
     description:
@@ -233,6 +249,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.1"
+  file_picker:
+    dependency: "direct main"
+    description:
+      name: file_picker
+      sha256: "84fd4edc420fd356b4c72b733ba3b54b4b20240b9e495e3852fe015181c9ede6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "11.0.1"
   file_selector_linux:
     dependency: transitive
     description:
@@ -774,7 +798,7 @@ packages:
     source: hosted
     version: "2.0.0"
   mime:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: mime
       sha256: "41a20518f0cb1256669420fdba0cd90d21561e560ac240f26ef8322e45bb7ed6"

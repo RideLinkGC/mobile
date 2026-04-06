@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/foundation.dart';
+import 'package:cookie_jar/cookie_jar.dart';
 import '../constants/app_constants.dart';
 import '../services/storage_service.dart';
 import 'api_exceptions.dart';
@@ -7,6 +9,7 @@ import 'api_exceptions.dart';
 class ApiClient {
   late final Dio _dio;
   final StorageService _storage;
+  final CookieJar _cookieJar = CookieJar();
 
   ApiClient(this._storage) {
     _dio = Dio(
@@ -20,6 +23,9 @@ class ApiClient {
       ),
     );
 
+    // Better Auth `getSession()` expects session cookies. Persist them across
+    // requests (mobile has no browser cookie jar by default).
+    _dio.interceptors.add(CookieManager(_cookieJar));
     _dio.interceptors.add(_AuthInterceptor(_storage));
     _dio.interceptors.add(_ResponseUnwrapInterceptor());
 
@@ -151,7 +157,9 @@ class _AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401) {
-      await _storage.clearTokens();
+      // Do not clear local tokens on 401 blindly:
+      // Better Auth session-cookie flows may 401 temporarily (e.g. before cookies
+      // are established). Clearing here breaks multi-step onboarding flows.
     }
     handler.next(err);
   }
