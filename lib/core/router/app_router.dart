@@ -6,6 +6,7 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/onboarding_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
+import '../../features/auth/screens/driver_setup_screen.dart';
 import '../../features/passenger/home/screens/passenger_home_screen.dart';
 import '../../features/driver/home/screens/driver_home_screen.dart';
 import '../../features/passenger/search/screens/search_screen.dart';
@@ -49,6 +50,8 @@ class AppRouter {
         final isAuth = authProvider.isAuthenticated;
         final isAuthRoute = state.matchedLocation == '/login' ||
             state.matchedLocation == '/register' ||
+            state.matchedLocation == '/register/driver-setup' ||
+            state.matchedLocation == '/register/driver-documents' ||
             state.matchedLocation == '/onboarding' ||
             state.matchedLocation == '/splash';
 
@@ -71,6 +74,14 @@ class AppRouter {
         GoRoute(
           path: '/register',
           builder: (context, state) => const RegisterScreen(),
+        ),
+        GoRoute(
+          path: '/register/driver-setup',
+          builder: (context, state) => const DriverSetupScreen(),
+        ),
+        GoRoute(
+          path: '/register/driver-documents',
+          builder: (context, state) => const DriverDocumentsScreen(),
         ),
 
         // Passenger shell

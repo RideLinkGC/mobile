@@ -114,10 +114,6 @@ class AuthProvider extends ChangeNotifier {
     required String phone,
     required UserRole role,
     String? nationalId,
-    String? licenseNumber,
-    String? vehicleModel,
-    String? vehiclePlate,
-    int? vehicleSeats,
   }) async {
     try {
       _state = AuthState.loading;
@@ -144,6 +140,13 @@ class AuthProvider extends ChangeNotifier {
         await _storage.saveAccessToken(sessionToken);
       }
 
+      if (role == UserRole.driver && sessionToken != null) {
+
+        _state = AuthState.authenticated;
+        notifyListeners();
+        return true;
+      }
+
       // Optional: national ID (not part of sign-up body)
       if (nationalId != null && nationalId.isNotEmpty) {
         try {
@@ -153,27 +156,6 @@ class AuthProvider extends ChangeNotifier {
           );
         } catch (e) {
           debugPrint('Complete profile step: $e');
-        }
-      }
-
-      // If registering as driver, attach vehicle info when provided
-      if (role == UserRole.driver &&
-          vehicleModel != null &&
-          vehiclePlate != null &&
-          vehicleSeats != null) {
-        try {
-          await _apiClient.post(
-            ApiEndpoints.becomeDriver,
-            data: {
-              if (licenseNumber != null && licenseNumber.isNotEmpty)
-                'licenseNumber': licenseNumber,
-              'vehicleModel': vehicleModel,
-              'vehiclePlate': vehiclePlate,
-              'vehicleSeats': vehicleSeats,
-            },
-          );
-        } catch (e) {
-          debugPrint('Become driver step: $e');
         }
       }
 
@@ -196,12 +178,68 @@ class AuthProvider extends ChangeNotifier {
         }
       }
 
-      _state = AuthState.unauthenticated;
-      await _syncConvexAuth();
+      // If sign-up succeeded and token exists but user fetch failed,
+      // keep the session token for follow-up setup steps.
+      if (sessionToken != null) {
+        await _storage.saveAccessToken(sessionToken);
+        _state = AuthState.authenticated;
+      } else {
+        _state = AuthState.unauthenticated;
+      }
+      if (role != UserRole.driver) {
+        await _syncConvexAuth();
+      }
       notifyListeners();
       return true;
     } on ApiException catch (e) {
       _errorMessage = e.message;
+      _state = AuthState.error;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Complete driver-specific profile after base account sign up.
+  Future<bool> becomeDriver({
+    required String licenseNumber,
+    required String vehicleModel,
+    required String vehiclePlate,
+    required int vehicleSeats,
+    required String licenseDocumentId,
+  }) async {
+    try {
+      _state = AuthState.loading;
+      _errorMessage = null;
+      notifyListeners();
+
+      await _apiClient.post(
+        ApiEndpoints.becomeDriver,
+        data: {
+          'licenseNumber': licenseNumber,
+          'vehicleModel': vehicleModel,
+          'vehiclePlate': vehiclePlate,
+          'vehicleSeats': vehicleSeats,
+          'licenseDocumentId': licenseDocumentId,
+        },
+      );
+
+      final sessionResp = await _apiClient.get(ApiEndpoints.getSession);
+      final sessionData = sessionResp.data as Map<String, dynamic>?;
+      if (sessionData?['user'] != null) {
+        _user = UserModel.fromJson(sessionData!['user'] as Map<String, dynamic>);
+        await _persistUserIds(_user!);
+      }
+
+      _state = AuthState.authenticated;
+      notifyListeners();
+      return true;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _state = AuthState.error;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = 'Failed to complete driver profile';
       _state = AuthState.error;
       notifyListeners();
       return false;

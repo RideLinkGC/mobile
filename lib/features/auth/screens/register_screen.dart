@@ -23,9 +23,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _vehicleModelController = TextEditingController();
-  final _vehiclePlateController = TextEditingController();
-  final _vehicleSeatsController = TextEditingController();
   bool _obscurePassword = true;
   UserRole _selectedRole = UserRole.passenger;
   int _currentStep = 0;
@@ -36,9 +33,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
-    _vehicleModelController.dispose();
-    _vehiclePlateController.dispose();
-    _vehicleSeatsController.dispose();
     super.dispose();
   }
 
@@ -52,27 +46,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
       password: _passwordController.text,
       phone: _phoneController.text.trim(),
       role: _selectedRole,
-      vehicleModel: _selectedRole == UserRole.driver
-          ? _vehicleModelController.text.trim()
-          : null,
-      vehiclePlate: _selectedRole == UserRole.driver
-          ? _vehiclePlateController.text.trim()
-          : null,
-      vehicleSeats: _selectedRole == UserRole.driver
-          ? int.tryParse(_vehicleSeatsController.text)
-          : null,
     );
 
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registration successful! Please log in.'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-      context.go('/login');
+      if (_selectedRole == UserRole.driver) {
+        context.go('/register/driver-setup');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registration successful! Please log in.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        context.go('/login');
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -111,12 +100,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onStepContinue: () {
                       if (_currentStep == 0) {
                         setState(() => _currentStep = 1);
-                      } else if (_currentStep == 1) {
-                        if (_selectedRole == UserRole.driver) {
-                          setState(() => _currentStep = 2);
-                        } else {
-                          _handleRegister();
-                        }
                       } else {
                         _handleRegister();
                       }
@@ -127,10 +110,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       }
                     },
                     controlsBuilder: (context, details) {
-                      final isLastStep =
-                          (_selectedRole == UserRole.passenger &&
-                              _currentStep == 1) ||
-                          _currentStep == 2;
+                      final isLastStep = _currentStep == 1;
                       return Padding(
                         padding: const EdgeInsets.only(top: 20),
                         child: Row(
@@ -173,7 +153,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               isSelected: _selectedRole == UserRole.passenger,
                               onTap: () => setState(() {
                                 _selectedRole = UserRole.passenger;
-                                if (_currentStep > 1) _currentStep = 1;
                               }),
                             ),
                             const SizedBox(height: 12),
@@ -235,44 +214,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   () => _obscurePassword = !_obscurePassword,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Step(
-                        title: const Text('Vehicle Information'),
-                        isActive: _currentStep >= 2,
-                        state: _selectedRole == UserRole.driver
-                            ? StepState.indexed
-                            : StepState.disabled,
-                        content: Column(
-                          children: [
-                            AppTextField(
-                              controller: _vehicleModelController,
-                              hintText: l10n.vehicleModel,
-                              prefixIcon: Icons.directions_car_outlined,
-                              validator: (v) => _selectedRole == UserRole.driver
-                                  ? Validators.required(v, 'Vehicle model')
-                                  : null,
-                            ),
-                            const SizedBox(height: 16),
-                            AppTextField(
-                              controller: _vehiclePlateController,
-                              hintText: l10n.vehiclePlate,
-                              prefixIcon: Icons.confirmation_number_outlined,
-                              validator: (v) => _selectedRole == UserRole.driver
-                                  ? Validators.vehiclePlate(v)
-                                  : null,
-                            ),
-                            const SizedBox(height: 16),
-                            AppTextField(
-                              controller: _vehicleSeatsController,
-                              hintText: l10n.vehicleSeats,
-                              prefixIcon: Icons.event_seat_outlined,
-                              keyboardType: TextInputType.number,
-                              validator: (v) => _selectedRole == UserRole.driver
-                                  ? Validators.seats(v)
-                                  : null,
                             ),
                           ],
                         ),
