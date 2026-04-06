@@ -20,6 +20,9 @@ class BookingModel {
   final String? tripDestination;
   final DateTime? tripDepartureTime;
   final String? driverName;
+  final String? passengerName;
+  final String? passengerPhone;
+  final String? passengerUserId;
 
   const BookingModel({
     required this.id,
@@ -38,12 +41,17 @@ class BookingModel {
     this.tripDestination,
     this.tripDepartureTime,
     this.driverName,
+    this.passengerName,
+    this.passengerPhone,
+    this.passengerUserId,
   });
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
     final trip = json['trip'] as Map<String, dynamic>?;
     final driver = trip?['driver'] as Map<String, dynamic>?;
     final driverUser = driver?['user'] as Map<String, dynamic>?;
+    final passenger = json['passenger'] as Map<String, dynamic>?;
+    final passengerUser = passenger?['user'] as Map<String, dynamic>?;
 
     return BookingModel(
       id: json['id'] as String? ?? '',
@@ -68,6 +76,9 @@ class BookingModel {
           ? DateTime.parse(trip!['departureTime'] as String)
           : null,
       driverName: driverUser?['name'] as String?,
+      passengerName: passengerUser?['name'] as String?,
+      passengerPhone: passengerUser?['phone'] as String?,
+      passengerUserId: passengerUser?['id'] as String?,
     );
   }
 

@@ -38,6 +38,10 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
   bool _pickingOrigin = true;
 
   final GlobalKey<GebetaMapWidgetState> _mapKey = GlobalKey();
+  static const List<(int, int)> _commutingWindows = [
+    (6, 10),
+    (17, 20),
+  ];
 
   @override
   void dispose() {
@@ -136,6 +140,15 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
       );
       return;
     }
+    if (_route == null || _route!.polylinePoints.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('A valid route with at least two points is required'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
     final storage = context.read<StorageService>();
     final driverId = await storage.getDriverId();
@@ -169,8 +182,43 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
       _departureTime.minute,
     );
     final pricePerSeat = double.tryParse(_priceController.text.trim()) ?? 0.0;
+    final now = DateTime.now();
+    if (!departureTime.isAfter(now)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Departure time must be in the future'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+    final hour = departureTime.hour;
+    final isInCommutingWindow = _commutingWindows.any(
+      (window) => hour >= window.$1 && hour < window.$2,
+    );
+    if (!isInCommutingWindow) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Departure must be within 06:00-10:00 or 17:00-20:00'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+    final maxAllowedPrice = distanceKm * AppConstants.maxPricePerKmPerSeat;
+    if (pricePerSeat > maxAllowedPrice) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Price exceeds cap. Max allowed is ${maxAllowedPrice.toStringAsFixed(2)} ETB for this route.',
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
-    final success = await provider.createTrip(
+    final createdTripId = await provider.createTrip(
       driverId: driverId,
       origin: origin,
       destination: destination,
@@ -185,7 +233,9 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
 
     if (!mounted) return;
 
-    if (success) {
+    if (createdTripId != null && createdTripId.isNotEmpty) {
+      await provider.loadDriverTrips();
+      if (!mounted) return;
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -193,7 +243,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
           backgroundColor: AppColors.success,
         ),
       );
-      context.pop();
+      context.go('/trip-detail/$createdTripId');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

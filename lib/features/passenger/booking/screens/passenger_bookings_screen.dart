@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 
+import '../../../../core/constants/enums.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/shell_drawer_scope.dart';
-import '../data/passenger_bookings_mock.dart';
+import '../models/booking_model.dart';
 import '../models/passenger_booking_list_item.dart';
+import '../providers/booking_provider.dart';
 import '../widgets/passenger_booking_list_card.dart';
 
 class PassengerBookingsScreen extends StatefulWidget {
@@ -16,77 +19,77 @@ class PassengerBookingsScreen extends StatefulWidget {
 }
 
 class _PassengerBookingsScreenState extends State<PassengerBookingsScreen> {
-  late List<PassengerBookingListItem> _awaitingYou;
-  late List<PassengerBookingListItem> _pendingDriver;
-  late List<PassengerBookingListItem> _active;
-
   @override
   void initState() {
     super.initState();
-    _loadMock();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<BookingProvider>().loadBookings();
+    });
   }
 
-  void _loadMock() {
-    _awaitingYou = List<PassengerBookingListItem>.from(
-      PassengerBookingsMock.awaitingYou(),
-    );
-    _pendingDriver = List<PassengerBookingListItem>.from(
-      PassengerBookingsMock.pendingDriver(),
-    );
-    _active = List<PassengerBookingListItem>.from(
-      PassengerBookingsMock.active(),
+  PassengerBookingListItem _toListItem(
+    BookingModel booking,
+    PassengerBookingListKind kind,
+  ) {
+    final driver = booking.driverName?.trim();
+    return PassengerBookingListItem(
+      id: booking.id,
+      tripId: booking.tripId,
+      driverName: (driver != null && driver.isNotEmpty) ? driver : 'Driver',
+      origin: booking.tripOrigin ?? 'Unknown origin',
+      destination: booking.tripDestination ?? 'Unknown destination',
+      departureTime: booking.tripDepartureTime ?? DateTime.now(),
+      totalPrice: booking.totalPrice,
+      seatsBooked: booking.seatsBooked,
+      kind: kind,
+      isRecurrent: booking.isSubscription,
+      recurrenceLabel: booking.isSubscription ? 'Subscription' : null,
     );
   }
 
   Future<void> _onRefresh() async {
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    if (!mounted) return;
-    setState(_loadMock);
+    await context.read<BookingProvider>().loadBookings();
   }
 
-  void _onAccept(PassengerBookingListItem item) {
-    setState(() {
-      _awaitingYou.removeWhere((e) => e.id == item.id);
-      _active.insert(
-        0,
-        PassengerBookingListItem(
-          id: item.id,
-          tripId: item.tripId,
-          driverName: item.driverName,
-          origin: item.origin,
-          destination: item.destination,
-          departureTime: item.departureTime,
-          totalPrice: item.totalPrice,
-          seatsBooked: item.seatsBooked,
-          kind: PassengerBookingListKind.active,
+  Future<void> _onCancel(PassengerBookingListItem item) async {
+    final provider = context.read<BookingProvider>();
+    final success = await provider.cancelBooking(item.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? AppLocalizations.of(context)!.bookingCancelledMessage
+              : (provider.error ?? 'Failed to cancel booking'),
         ),
-      );
-    });
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.bookingAcceptedMessage),
+        backgroundColor: success ? null : AppColors.error,
         behavior: SnackBarBehavior.floating,
       ),
     );
-  }
-
-  void _onCancelAwaiting(PassengerBookingListItem item) {
-    setState(() {
-      _awaitingYou.removeWhere((e) => e.id == item.id);
-    });
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.bookingCancelledMessage),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    if (success) {
+      await provider.loadBookings();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final bookingProvider = context.watch<BookingProvider>();
+    final bookings = bookingProvider.bookings;
+    final pendingDriver = bookings
+        .where((b) => b.status == BookingStatus.pending)
+        .map((b) => _toListItem(
+              b,
+              PassengerBookingListKind.pendingDriverConfirmation,
+            ))
+        .toList();
+    final active = bookings
+        .where(
+          (b) => b.status == BookingStatus.confirmed || b.status == BookingStatus.completed,
+        )
+        .map((b) => _toListItem(b, PassengerBookingListKind.active))
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -96,21 +99,31 @@ class _PassengerBookingsScreenState extends State<PassengerBookingsScreen> {
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: _onRefresh,
-        child: CustomScrollView(
+        child: bookingProvider.loading && bookings.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  
                   _SectionHeader(title: l10n.bookingSectionPendingDriver),
                   const SizedBox(height: 12),
-                  ..._buildPendingList(l10n),
+                  ..._buildPendingList(l10n, pendingDriver),
                   const SizedBox(height: 28),
                   _SectionHeader(title: l10n.bookingSectionActive),
                   const SizedBox(height: 12),
-                  ..._buildActiveList(l10n),
+                  ..._buildActiveList(l10n, active),
+                  if (bookingProvider.error != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      bookingProvider.error!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.warning,
+                          ),
+                    ),
+                  ],
                 ]),
               ),
             ),
@@ -120,40 +133,23 @@ class _PassengerBookingsScreenState extends State<PassengerBookingsScreen> {
     );
   }
 
-  List<Widget> _buildAwaitingList(AppLocalizations l10n) {
-    if (_awaitingYou.isEmpty) {
-      return [
-        _EmptyHint(text: l10n.bookingEmptyAwaiting),
-      ];
-    }
-    return _awaitingYou
-        .map(
-          (item) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: PassengerBookingListCard(
-              item: item,
-              l10n: l10n,
-              onAccept: () => _onAccept(item),
-              onCancel: () => _onCancelAwaiting(item),
-            ),
-          ),
-        )
-        .toList();
-  }
-
-  List<Widget> _buildPendingList(AppLocalizations l10n) {
-    if (_pendingDriver.isEmpty) {
+  List<Widget> _buildPendingList(
+    AppLocalizations l10n,
+    List<PassengerBookingListItem> pendingDriver,
+  ) {
+    if (pendingDriver.isEmpty) {
       return [
         _EmptyHint(text: l10n.bookingEmptyPending),
       ];
     }
-    return _pendingDriver
+    return pendingDriver
         .map(
           (item) => Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: PassengerBookingListCard(
               item: item,
               l10n: l10n,
+              onCancel: () => _onCancel(item),
               onTap: () => context.push('/driver-detail/${item.tripId}'),
             ),
           ),
@@ -161,13 +157,16 @@ class _PassengerBookingsScreenState extends State<PassengerBookingsScreen> {
         .toList();
   }
 
-  List<Widget> _buildActiveList(AppLocalizations l10n) {
-    if (_active.isEmpty) {
+  List<Widget> _buildActiveList(
+    AppLocalizations l10n,
+    List<PassengerBookingListItem> active,
+  ) {
+    if (active.isEmpty) {
       return [
         _EmptyHint(text: l10n.bookingEmptyActive),
       ];
     }
-    return _active
+    return active
         .map(
           (item) => Padding(
             padding: const EdgeInsets.only(bottom: 12),

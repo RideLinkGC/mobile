@@ -29,6 +29,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
 
   RouteResult? _route;
   TripModel? _trip;
+  bool _endingTrip = false;
 
   @override
   void initState() {
@@ -362,9 +363,29 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
                       if (isDriver)
                         AppButton(
                           text: 'End Trip',
+                          isLoading: _endingTrip,
                           onPressed: () async {
-                            await trackingProvider.endTrip();
-                            if (context.mounted) context.pop();
+                            if (_endingTrip) return;
+                            setState(() => _endingTrip = true);
+                            final tripProvider = context.read<TripProvider>();
+                            final completed =
+                                await tripProvider.completeTrip(widget.tripId);
+                            if (!context.mounted) return;
+                            if (completed) {
+                              await trackingProvider.endTrip();
+                              if (context.mounted) context.pop();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    tripProvider.error ??
+                                        'Failed to end trip. Please try again.',
+                                  ),
+                                  backgroundColor: AppColors.error,
+                                ),
+                              );
+                            }
+                            if (mounted) setState(() => _endingTrip = false);
                           },
                         ),
                     ],

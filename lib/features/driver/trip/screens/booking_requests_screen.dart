@@ -18,6 +18,8 @@ class BookingRequestsScreen extends StatefulWidget {
 }
 
 class _BookingRequestsScreenState extends State<BookingRequestsScreen> {
+  String? _pendingActionBookingId;
+
   @override
   void initState() {
     super.initState();
@@ -27,6 +29,8 @@ class _BookingRequestsScreenState extends State<BookingRequestsScreen> {
   }
 
   Future<void> _accept(BookingModel booking) async {
+    if (_pendingActionBookingId != null) return;
+    setState(() => _pendingActionBookingId = booking.id);
     final provider = context.read<TripProvider>();
     final success = await provider.acceptBooking(booking.id);
     if (!mounted) return;
@@ -43,14 +47,17 @@ class _BookingRequestsScreenState extends State<BookingRequestsScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Failed to accept booking'),
+          content: Text(provider.error ?? 'Failed to accept booking'),
           backgroundColor: AppColors.error,
         ),
       );
     }
+    if (mounted) setState(() => _pendingActionBookingId = null);
   }
 
   Future<void> _decline(BookingModel booking) async {
+    if (_pendingActionBookingId != null) return;
+    setState(() => _pendingActionBookingId = booking.id);
     final provider = context.read<TripProvider>();
     final success = await provider.declineBooking(booking.id);
     if (!mounted) return;
@@ -68,11 +75,12 @@ class _BookingRequestsScreenState extends State<BookingRequestsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Failed to decline booking'),
+          content: Text(provider.error ?? 'Failed to decline booking'),
           backgroundColor: AppColors.error,
         ),
       );
     }
+    if (mounted) setState(() => _pendingActionBookingId = null);
   }
 
   @override
@@ -102,21 +110,25 @@ class _BookingRequestsScreenState extends State<BookingRequestsScreen> {
       appBar: AppBar(
         title: Text(l10n.bookingRequests),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(20),
-        itemCount: pendingRequests.length,
-        itemBuilder: (context, index) {
-          final booking = pendingRequests[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _BookingRequestCard(
-              booking: booking,
-              l10n: l10n,
-              onAccept: () => _accept(booking),
-              onDecline: () => _decline(booking),
-            ),
-          );
-        },
+      body: RefreshIndicator(
+        onRefresh: () => context.read<TripProvider>().loadTripBookings(widget.tripId),
+        child: ListView.builder(
+          padding: const EdgeInsets.all(20),
+          itemCount: pendingRequests.length,
+          itemBuilder: (context, index) {
+            final booking = pendingRequests[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _BookingRequestCard(
+                booking: booking,
+                l10n: l10n,
+                busy: _pendingActionBookingId == booking.id,
+                onAccept: () => _accept(booking),
+                onDecline: () => _decline(booking),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -155,15 +167,19 @@ class _BookingRequestCard extends StatelessWidget {
   final AppLocalizations l10n;
   final VoidCallback onAccept;
   final VoidCallback onDecline;
+  final bool busy;
 
   const _BookingRequestCard({
     required this.booking,
     required this.l10n,
     required this.onAccept,
     required this.onDecline,
+    this.busy = false,
   });
 
   String _getPassengerLabel() {
+    final name = booking.passengerName;
+    if (name != null && name.trim().isNotEmpty) return name.trim();
     return 'Passenger #${booking.passengerId.length > 8 ? booking.passengerId.substring(0, 8) : booking.passengerId}';
   }
 
@@ -238,15 +254,16 @@ class _BookingRequestCard extends StatelessWidget {
               Expanded(
                 child: AppButton(
                   text: l10n.accept,
-                  onPressed: onAccept,
+                  onPressed: busy ? null : onAccept,
                   backgroundColor: AppColors.success,
+                  isLoading: busy,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: AppButton(
                   text: l10n.decline,
-                  onPressed: onDecline,
+                  onPressed: busy ? null : onDecline,
                   isOutlined: true,
                   foregroundColor: AppColors.error,
                 ),

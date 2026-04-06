@@ -30,8 +30,15 @@ class EmergencyProvider extends ChangeNotifier {
     final lat = position?.latitude ?? 0.0;
     final lng = position?.longitude ?? 0.0;
 
+    if (_convex == null) {
+      _error = 'Emergency service is not configured for this build.';
+      _isSending = false;
+      notifyListeners();
+      return false;
+    }
+
     try {
-      final result = await _convex?.mutation(
+      final result = await _convex.mutation(
         name: ConvexFunctions.triggerSOS,
         args: {
           'tripId': tripId,
@@ -40,7 +47,13 @@ class EmergencyProvider extends ChangeNotifier {
           if (reason != null) 'reason': reason,
         },
       );
-      _alertId = result;
+      _alertId = result as String?;
+      if (_alertId == null || _alertId!.isEmpty) {
+        _error = 'Failed to send SOS alert. Please try again.';
+        _isSending = false;
+        notifyListeners();
+        return false;
+      }
       _isSending = false;
       _sent = true;
       notifyListeners();

@@ -59,6 +59,28 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     if (tripId == null) return;
 
     final provider = context.read<TripProvider>();
+    if (status == TripStatus.inProgress) {
+      final allow = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Start trip now?'),
+          content: const Text(
+            'Starting the trip will notify confirmed passengers and begin live tracking.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Start'),
+            ),
+          ],
+        ),
+      );
+      if (allow != true) return;
+    }
     final success = await provider.updateTripStatus(tripId, status);
     if (!mounted) return;
 
@@ -71,7 +93,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to update trip status'),
+          content: Text(provider.error ?? 'Failed to update trip status'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -272,7 +294,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   }
 
   String _getPassengerDisplayName(BookingModel booking) {
-    return 'Passenger (${booking.seatsBooked} seat${booking.seatsBooked > 1 ? 's' : ''})';
+    final name = booking.passengerName?.trim();
+    final title = (name != null && name.isNotEmpty) ? name : 'Passenger';
+    return '$title (${booking.seatsBooked} seat${booking.seatsBooked > 1 ? 's' : ''})';
   }
 
   List<MapMarker> _buildMapMarkers(dynamic trip) {

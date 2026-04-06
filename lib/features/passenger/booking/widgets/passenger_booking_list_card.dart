@@ -50,6 +50,7 @@ class PassengerBookingListCard extends StatelessWidget {
         DateFormat('h:mm a · EEE, MMM d').format(item.departureTime);
     final showActions =
         onAccept != null && onCancel != null && item.kind == PassengerBookingListKind.awaitingPassengerConfirmation;
+    final showCancelOnly = onCancel != null && !showActions;
 
     return AppCard(
       color: Theme.of(context).colorScheme.surface.withAlpha(125),
@@ -193,6 +194,15 @@ class PassengerBookingListCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ] else if (showCancelOnly) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: onCancel,
+                child: Text(l10n.cancel),
+              ),
             ),
           ],
         ],

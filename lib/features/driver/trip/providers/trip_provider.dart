@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../../../core/constants/enums.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/network/api_exceptions.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../passenger/booking/models/booking_model.dart';
 import '../models/trip_model.dart';
@@ -191,7 +192,14 @@ class TripProvider extends ChangeNotifier {
     );
   }
 
-  Future<bool> createTrip({
+  String _readError(Object e, {required String fallback}) {
+    if (e is ApiException && e.message.isNotEmpty) {
+      return e.message;
+    }
+    return fallback;
+  }
+
+  Future<String?> createTrip({
     required String driverId,
     required String origin,
     required String destination,
@@ -206,7 +214,7 @@ class TripProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _apiClient.post(ApiEndpoints.trips, data: {
+      final response = await _apiClient.post(ApiEndpoints.trips, data: {
         'driverId': driverId,
         'origin': origin,
         'destination': destination,
@@ -216,19 +224,22 @@ class TripProvider extends ChangeNotifier {
         'availableSeats': availableSeats,
         'pricePerSeat': pricePerSeat,
       });
+      final data = response.data as Map<String, dynamic>?;
+      final createdId = data?['id'] as String?;
       _loading = false;
       notifyListeners();
-      return true;
+      return createdId;
     } catch (e) {
       debugPrint('Failed to create trip: $e');
-      _error = 'Failed to create trip';
+      _error = _readError(e, fallback: 'Failed to create trip');
       _loading = false;
       notifyListeners();
-      return false;
+      return null;
     }
   }
 
   Future<bool> updateTripStatus(String tripId, TripStatus status) async {
+    _error = null;
     try {
       await _apiClient.patch(
         ApiEndpoints.tripStatus(tripId),
@@ -237,26 +248,43 @@ class TripProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Failed to update trip status: $e');
+      _error = _readError(e, fallback: 'Failed to update trip status');
+      notifyListeners();
       return false;
     }
   }
 
+  Future<bool> completeTrip(String tripId) async {
+    final ok = await updateTripStatus(tripId, TripStatus.completed);
+    if (ok) {
+      await getTripById(tripId);
+      await loadDriverTrips();
+    }
+    return ok;
+  }
+
   Future<bool> acceptBooking(String bookingId) async {
+    _error = null;
     try {
       await _apiClient.patch(ApiEndpoints.acceptBooking(bookingId));
       return true;
     } catch (e) {
       debugPrint('Failed to accept booking: $e');
+      _error = _readError(e, fallback: 'Failed to accept booking');
+      notifyListeners();
       return false;
     }
   }
 
   Future<bool> declineBooking(String bookingId) async {
+    _error = null;
     try {
       await _apiClient.patch(ApiEndpoints.declineBooking(bookingId));
       return true;
     } catch (e) {
       debugPrint('Failed to decline booking: $e');
+      _error = _readError(e, fallback: 'Failed to decline booking');
+      notifyListeners();
       return false;
     }
   }
