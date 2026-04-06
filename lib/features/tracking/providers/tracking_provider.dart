@@ -63,6 +63,14 @@ class TrackingProvider extends ChangeNotifier {
         },
         onError: (message, value) {
           debugPrint('Tracking subscription error: $message');
+          if (message.contains('Authentication required')) {
+            _locationSubscription?.cancel();
+            _locationSubscription = null;
+            _isTracking = false;
+            _error = null;
+            notifyListeners();
+            return;
+          }
           _error = message;
           notifyListeners();
         },

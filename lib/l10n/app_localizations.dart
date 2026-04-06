@@ -544,6 +544,66 @@ abstract class AppLocalizations {
   /// **'Open live view'**
   String get passengerHomeOpenLiveView;
 
+  /// No description provided for @passengerDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Trip'**
+  String get passengerDashboardTitle;
+
+  /// No description provided for @passengerDashboardSosShort.
+  ///
+  /// In en, this message translates to:
+  /// **'SOS'**
+  String get passengerDashboardSosShort;
+
+  /// No description provided for @passengerDashboardMinutesAway.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min away'**
+  String passengerDashboardMinutesAway(int minutes);
+
+  /// No description provided for @passengerDashboardTravelBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Have a pleasant journey.'**
+  String get passengerDashboardTravelBanner;
+
+  /// No description provided for @passengerDashboardPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup'**
+  String get passengerDashboardPickup;
+
+  /// No description provided for @passengerDashboardDropoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop-off'**
+  String get passengerDashboardDropoff;
+
+  /// No description provided for @passengerDashboardEtaLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ETA {time}'**
+  String passengerDashboardEtaLabel(String time);
+
+  /// No description provided for @passengerDashboardSeatsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Seats'**
+  String passengerDashboardSeatsCount(int count);
+
+  /// No description provided for @passengerDashboardAcOn.
+  ///
+  /// In en, this message translates to:
+  /// **'AC On'**
+  String get passengerDashboardAcOn;
+
+  /// No description provided for @passengerDashboardIveArrived.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ve Arrived'**
+  String get passengerDashboardIveArrived;
+
   /// No description provided for @passengerBookingsTitle.
   ///
   /// In en, this message translates to:
@@ -795,6 +855,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preferred Routes'**
   String get preferredRoutes;
+
+  /// No description provided for @emergencyAlertTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency Alert'**
+  String get emergencyAlertTitle;
+
+  /// No description provided for @emergencyAlertSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s the emergency?'**
+  String get emergencyAlertSubtitle;
+
+  /// No description provided for @emergencyTypeCarMalfunction.
+  ///
+  /// In en, this message translates to:
+  /// **'Car malfunction'**
+  String get emergencyTypeCarMalfunction;
+
+  /// No description provided for @emergencyTypeMedical.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical emergency'**
+  String get emergencyTypeMedical;
+
+  /// No description provided for @emergencyTypeSuspicious.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspicious activity'**
+  String get emergencyTypeSuspicious;
+
+  /// No description provided for @emergencyTypeAccident.
+  ///
+  /// In en, this message translates to:
+  /// **'Accident'**
+  String get emergencyTypeAccident;
+
+  /// No description provided for @emergencySendAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Emergency Alert'**
+  String get emergencySendAlert;
+
+  /// No description provided for @emergencySendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send alert. Try again or call emergency services.'**
+  String get emergencySendFailed;
 }
 
 class _AppLocalizationsDelegate

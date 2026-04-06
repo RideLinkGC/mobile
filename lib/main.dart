@@ -6,6 +6,7 @@ import 'core/constants/app_constants.dart';
 import 'core/network/api_client.dart';
 import 'core/services/chapa_service.dart';
 import 'core/services/gebeta_maps_service.dart';
+import 'core/services/place_search_storage.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/locale_provider.dart';
 import 'core/services/location_service.dart';
@@ -29,6 +30,7 @@ Future<void> main() async {
   final apiClient = ApiClient(storageService);
   final locationService = LocationService();
   final gebetaMapsService = GebetaMapsService();
+  final placeSearchStorage = PlaceSearchStorage();
   final chapaService = ChapaService();
 
   ConvexClient? convex;
@@ -53,6 +55,7 @@ Future<void> main() async {
         Provider.value(value: storageService),
         Provider.value(value: locationService),
         Provider.value(value: gebetaMapsService),
+        Provider.value(value: placeSearchStorage),
         Provider.value(value: chapaService),
         Provider<ConvexClient?>.value(value: convex),
 
@@ -62,7 +65,7 @@ Future<void> main() async {
 
         // Auth
         ChangeNotifierProvider(
-          create: (_) => AuthProvider(apiClient, storageService),
+          create: (_) => AuthProvider(apiClient, storageService, convex: convex),
         ),
 
         // Real-time providers

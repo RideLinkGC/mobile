@@ -121,7 +121,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     final points = _route!.polylinePoints
         .map((p) => LatLng(p[0], p[1]))
         .toList();
-    return [MapPolyline(points: points, color: '#188AEC', width: 4)];
+    return [MapPolyline(points: points, color: AppColors.primaryMapHex, width: 4)];
   }
 
   Future<void> _handleSubmit() async {

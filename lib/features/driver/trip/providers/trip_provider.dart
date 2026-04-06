@@ -32,6 +32,10 @@ class TripProvider extends ChangeNotifier {
       driverId: 'd1',
       origin: 'Bole, Airport Main Gate Area',
       destination: 'Megenagna, Megenagna Square',
+      routeCoordinates: const [
+        RouteCoordinate(lat: 9.0192, lng: 38.7525),
+        RouteCoordinate(lat: 9.0300, lng: 38.7800),
+      ],
       departureTime: DateTime.now().add(const Duration(hours: 1)),
       availableSeats: 4,
       pricePerSeat: 45,

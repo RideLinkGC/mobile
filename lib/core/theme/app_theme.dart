@@ -17,10 +17,13 @@ class AppTheme {
         primaryContainer: AppColors.primaryLight,
         secondary: AppColors.secondary,
         secondaryContainer: AppColors.secondaryLight,
+        tertiary: AppColors.accent,
+        tertiaryContainer: Color(0xFFB8DCD8),
         surface: AppColors.lightSurface,
         error: AppColors.error,
-        onPrimary: Colors.white,
-        onSecondary: Colors.black,
+        onPrimary: AppColors.textPrimaryLight,
+        onSecondary: AppColors.textPrimaryLight,
+        onTertiary: AppColors.textPrimaryLight,
         onSurface: AppColors.textPrimaryLight,
         onError: Colors.white,
       ),
@@ -42,7 +45,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.textPrimaryLight,
           minimumSize: const Size(double.infinity, 50),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           textStyle: AppTypography.titleLarge.copyWith(fontFamily: _fontFamily),
@@ -97,7 +100,7 @@ class AppTheme {
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.textPrimaryLight,
       ),
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.lightBackground,
@@ -120,14 +123,17 @@ class AppTheme {
       brightness: Brightness.dark,
       fontFamily: _fontFamily,
       colorScheme: const ColorScheme.dark(
-        primary: AppColors.primaryLight,
+        primary: AppColors.primary,
         primaryContainer: AppColors.primaryDark,
         secondary: AppColors.secondary,
         secondaryContainer: AppColors.secondaryDark,
+        tertiary: AppColors.accent,
+        tertiaryContainer: Color(0xFF3D5C59),
         surface: AppColors.darkSurface,
         error: AppColors.error,
-        onPrimary: Colors.black,
-        onSecondary: Colors.black,
+        onPrimary: AppColors.textPrimaryLight,
+        onSecondary: AppColors.textPrimaryLight,
+        onTertiary: AppColors.textPrimaryLight,
         onSurface: AppColors.textPrimaryDark,
         onError: Colors.white,
       ),
@@ -148,8 +154,8 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryLight,
-          foregroundColor: Colors.black,
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.textPrimaryLight,
           minimumSize: const Size(double.infinity, 50),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           textStyle: AppTypography.titleLarge.copyWith(fontFamily: _fontFamily),
@@ -157,16 +163,16 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primaryLight,
+          foregroundColor: AppColors.primary,
           minimumSize: const Size(double.infinity, 50),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          side: const BorderSide(color: AppColors.primaryLight),
+          side: const BorderSide(color: AppColors.primary),
           textStyle: AppTypography.titleLarge.copyWith(fontFamily: _fontFamily),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primaryLight,
+          foregroundColor: AppColors.primary,
           textStyle: AppTypography.labelLarge.copyWith(fontFamily: _fontFamily),
         ),
       ),
@@ -184,7 +190,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: AppColors.primaryLight, width: 2),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -197,18 +203,18 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.darkSurface,
-        selectedItemColor: AppColors.primaryLight,
+        selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textSecondaryDark,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primaryLight,
-        foregroundColor: Colors.black,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.textPrimaryLight,
       ),
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.darkCard,
-        selectedColor: AppColors.primaryLight.withValues(alpha: 0.2),
+        selectedColor: AppColors.primary.withValues(alpha: 0.2),
         labelStyle: AppTypography.labelMedium,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),

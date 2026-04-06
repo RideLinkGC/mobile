@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:gebeta_gl/gebeta_gl.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
@@ -10,6 +12,7 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/gebeta_map_widget.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../driver/trip/providers/trip_provider.dart';
+import '../../emergency/widgets/emergency_alert_sheet.dart';
 import '../providers/tracking_provider.dart';
 
 class LiveTrackingScreen extends StatefulWidget {
@@ -30,9 +33,10 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadTripData();
-      _startTracking();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _loadTripData();
+      if (!mounted) return;
+      await _startTracking();
     });
   }
 
@@ -41,8 +45,10 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
         await context.read<TripProvider>().getTripById(widget.tripId);
     if (mounted) {
       setState(() => _trip = trip);
-      if (trip != null && trip.routeCoordinates.isEmpty) {
-        _loadRoute();
+      // Fetch directions/ETA/distance from Gebeta when we have endpoints.
+      // (The previous `routeCoordinates.isEmpty` check was inverted and never loaded.)
+      if (trip != null && trip.routeCoordinates.length >= 2) {
+        await _loadRoute();
       }
     }
   }
@@ -50,13 +56,26 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
   Future<void> _startTracking() async {
     final authProvider = context.read<AuthProvider>();
     final trackingProvider = context.read<TrackingProvider>();
+    final storage = context.read<StorageService>();
+
+    // Convex `location:*` handlers use `requireAuth`; JWT must be on the client first.
+    await authProvider.syncConvexAuth();
+    if (!mounted) return;
+
+    final convexJwt = await storage.getConvexJwt();
+    if (convexJwt == null || convexJwt.isEmpty) {
+      // Demo login or missing `/auth/token` — skip Convex to avoid requireAuth errors.
+      return;
+    }
 
     if (authProvider.isDriver) {
-      final driverId =
-          await context.read<StorageService>().getDriverId() ?? '';
-      trackingProvider.startBroadcasting(widget.tripId, driverId: driverId);
+      final driverId = await storage.getDriverId() ?? '';
+      await trackingProvider.startBroadcasting(
+        widget.tripId,
+        driverId: driverId,
+      );
     } else {
-      trackingProvider.startListening(widget.tripId);
+      await trackingProvider.startListening(widget.tripId);
     }
   }
 
@@ -82,7 +101,40 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
     );
     if (mounted) {
       setState(() => _route = route);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _fitMapToRoute());
     }
+  }
+
+  void _fitMapToRoute() {
+    final state = _mapKey.currentState;
+    if (state == null) return;
+
+    final points = <LatLng>[];
+    final rr = _route;
+    if (rr != null && rr.polylinePoints.length >= 2) {
+      for (final p in rr.polylinePoints) {
+        if (p.length >= 2) points.add(LatLng(p[0], p[1]));
+      }
+    } else {
+      points.addAll([_originLatLng, _destLatLng]);
+    }
+
+    var minLat = points.first.latitude;
+    var maxLat = minLat;
+    var minLng = points.first.longitude;
+    var maxLng = minLng;
+    for (final p in points) {
+      minLat = math.min(minLat, p.latitude);
+      maxLat = math.max(maxLat, p.latitude);
+      minLng = math.min(minLng, p.longitude);
+      maxLng = math.max(maxLng, p.longitude);
+    }
+    const pad = 0.004;
+    state.fitBounds(
+      LatLng(minLat - pad, minLng - pad),
+      LatLng(maxLat + pad, maxLng + pad),
+      padding: 48,
+    );
   }
 
   LatLng get _originLatLng {
@@ -113,21 +165,31 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
   }
 
   List<MapPolyline> get _polylines {
+    if (_route != null && _route!.polylinePoints.length >= 2) {
+      final points = _route!.polylinePoints
+          .where((p) => p.length >= 2)
+          .map((p) => LatLng(p[0], p[1]))
+          .toList();
+      return [
+        MapPolyline(
+          points: points,
+          color: AppColors.primaryMapHex,
+          width: 5,
+        ),
+      ];
+    }
     if (_trip != null && _trip!.routeCoordinates.length >= 2) {
       return [
         MapPolyline(
           points: _trip!.routeCoordinates
               .map((c) => LatLng(c.lat, c.lng))
               .toList(),
-          color: '#188AEC',
+          color: AppColors.primaryMapHex,
           width: 5,
         ),
       ];
     }
-    if (_route == null) return [];
-    final points =
-        _route!.polylinePoints.map((p) => LatLng(p[0], p[1])).toList();
-    return [MapPolyline(points: points, color: '#188AEC', width: 5)];
+    return [];
   }
 
   @override
@@ -260,8 +322,8 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
                                         color: AppColors.textSecondaryLight),
                               ),
                               Text(
-                                _route != null
-                                    ? '${_route!.durationMinutes.toStringAsFixed(0)} min'
+                                _route != null && _route!.durationMinutes > 0
+                                    ? '${_route!.durationMinutes.round().clamp(1, 24 * 60)} min'
                                     : '-- min',
                                 style: Theme.of(context)
                                     .textTheme
@@ -282,10 +344,10 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
                                         color: AppColors.textSecondaryLight),
                               ),
                               Text(
-                                _trip != null && _trip!.distanceKm > 0
-                                    ? '${_trip!.distanceKm.toStringAsFixed(1)} km'
-                                    : _route != null
-                                        ? '${_route!.distanceKm.toStringAsFixed(1)} km'
+                                _route != null && _route!.distanceKm > 0
+                                    ? '${_route!.distanceKm.toStringAsFixed(1)} km'
+                                    : _trip != null && _trip!.distanceKm > 0
+                                        ? '${_trip!.distanceKm.toStringAsFixed(1)} km'
                                         : '-- km',
                                 style: Theme.of(context)
                                     .textTheme
@@ -315,7 +377,8 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
             right: 16,
             bottom: 280,
             child: FloatingActionButton(
-              onPressed: () => context.push('/sos/${widget.tripId}'),
+              onPressed: () =>
+                  showEmergencyAlertFlow(context, widget.tripId),
               backgroundColor: AppColors.sosRed,
               child: const Icon(Icons.emergency, color: Colors.white),
             ),

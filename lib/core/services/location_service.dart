@@ -1,6 +1,17 @@
 import 'package:geolocator/geolocator.dart';
 
 class LocationService {
+  /// Call once at app start (e.g. splash) so the OS location prompt can appear early.
+  Future<void> ensureLocationPermissionRequested() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+  }
+
   Future<bool> checkPermission() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) return false;

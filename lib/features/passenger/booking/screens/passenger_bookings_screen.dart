@@ -103,10 +103,7 @@ class _PassengerBookingsScreenState extends State<PassengerBookingsScreen> {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _SectionHeader(title: l10n.bookingSectionAwaitingYou),
-                  const SizedBox(height: 12),
-                  ..._buildAwaitingList(l10n),
-                  const SizedBox(height: 28),
+                  
                   _SectionHeader(title: l10n.bookingSectionPendingDriver),
                   const SizedBox(height: 12),
                   ..._buildPendingList(l10n),

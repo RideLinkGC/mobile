@@ -68,7 +68,7 @@ class PassengerBookingListCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
+              _kindChipLabel()!="Confirmed"?Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: _kindChipColor().withValues(alpha: 0.12),
@@ -81,7 +81,7 @@ class PassengerBookingListCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                 ),
-              ),
+              ):SizedBox.shrink(),
             ],
           ),
           if (item.isRecurrent && item.recurrenceLabel != null) ...[

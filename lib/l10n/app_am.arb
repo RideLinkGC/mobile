@@ -79,6 +79,31 @@
   "passengerHomeActiveTrips": "Your active trips",
   "passengerHomeEnRouteHint": "En route · driver is heading to your pickup",
   "passengerHomeOpenLiveView": "Open live view",
+  "passengerDashboardTitle": "Current Trip",
+  "passengerDashboardSosShort": "SOS",
+  "passengerDashboardMinutesAway": "{minutes} min away",
+  "@passengerDashboardMinutesAway": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "passengerDashboardTravelBanner": "መልካም ጉዞ ይሁንልዎ።",
+  "passengerDashboardPickup": "Pickup",
+  "passengerDashboardDropoff": "Drop-off",
+  "passengerDashboardEtaLabel": "ETA {time}",
+  "@passengerDashboardEtaLabel": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "passengerDashboardSeatsCount": "{count} Seats",
+  "@passengerDashboardSeatsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "passengerDashboardAcOn": "AC On",
+  "passengerDashboardIveArrived": "I've Arrived",
   "passengerBookingsTitle": "Bookings",
   "bookingSectionAwaitingYou": "Awaiting your confirmation",
   "bookingSectionPendingDriver": "Pending driver approval",
@@ -120,5 +145,13 @@
   "scheduledTrips": "Scheduled Trips",
   "completedTrips": "Completed Trips",
   "about": "About",
-  "preferredRoutes": "Preferred Routes"
+  "preferredRoutes": "Preferred Routes",
+  "emergencyAlertTitle": "Emergency Alert",
+  "emergencyAlertSubtitle": "What's the emergency?",
+  "emergencyTypeCarMalfunction": "Car malfunction",
+  "emergencyTypeMedical": "Medical emergency",
+  "emergencyTypeSuspicious": "Suspicious activity",
+  "emergencyTypeAccident": "Accident",
+  "emergencySendAlert": "Send Emergency Alert",
+  "emergencySendFailed": "Could not send alert. Try again or call emergency services."
 }

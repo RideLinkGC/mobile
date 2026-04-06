@@ -235,6 +235,42 @@ class AppLocalizationsAm extends AppLocalizations {
   String get passengerHomeOpenLiveView => 'Open live view';
 
   @override
+  String get passengerDashboardTitle => 'Current Trip';
+
+  @override
+  String get passengerDashboardSosShort => 'SOS';
+
+  @override
+  String passengerDashboardMinutesAway(int minutes) {
+    return '$minutes min away';
+  }
+
+  @override
+  String get passengerDashboardTravelBanner => 'መልካም ጉዞ ይሁንልዎ።';
+
+  @override
+  String get passengerDashboardPickup => 'Pickup';
+
+  @override
+  String get passengerDashboardDropoff => 'Drop-off';
+
+  @override
+  String passengerDashboardEtaLabel(String time) {
+    return 'ETA $time';
+  }
+
+  @override
+  String passengerDashboardSeatsCount(int count) {
+    return '$count Seats';
+  }
+
+  @override
+  String get passengerDashboardAcOn => 'AC On';
+
+  @override
+  String get passengerDashboardIveArrived => 'I\'ve Arrived';
+
+  @override
   String get passengerBookingsTitle => 'Bookings';
 
   @override
@@ -363,4 +399,29 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get preferredRoutes => 'Preferred Routes';
+
+  @override
+  String get emergencyAlertTitle => 'Emergency Alert';
+
+  @override
+  String get emergencyAlertSubtitle => 'What\'s the emergency?';
+
+  @override
+  String get emergencyTypeCarMalfunction => 'Car malfunction';
+
+  @override
+  String get emergencyTypeMedical => 'Medical emergency';
+
+  @override
+  String get emergencyTypeSuspicious => 'Suspicious activity';
+
+  @override
+  String get emergencyTypeAccident => 'Accident';
+
+  @override
+  String get emergencySendAlert => 'Send Emergency Alert';
+
+  @override
+  String get emergencySendFailed =>
+      'Could not send alert. Try again or call emergency services.';
 }

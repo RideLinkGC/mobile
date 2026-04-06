@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../../core/services/location_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../chat/providers/chat_provider.dart';
@@ -34,6 +35,9 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
     );
     _controller.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<LocationService>().ensureLocationPermissionRequested();
+    });
     _navigateAfterDelay();
   }
 

@@ -235,6 +235,42 @@ class AppLocalizationsOm extends AppLocalizations {
   String get passengerHomeOpenLiveView => 'Mul\'isa kallattii banaa';
 
   @override
+  String get passengerDashboardTitle => 'Imala ammaa';
+
+  @override
+  String get passengerDashboardSosShort => 'SOS';
+
+  @override
+  String passengerDashboardMinutesAway(int minutes) {
+    return 'Daqiiqaa $minutes booda';
+  }
+
+  @override
+  String get passengerDashboardTravelBanner => 'Imala gaarii taasisaa!';
+
+  @override
+  String get passengerDashboardPickup => 'Fudhachuu';
+
+  @override
+  String get passengerDashboardDropoff => 'Gadi bu\'uu';
+
+  @override
+  String passengerDashboardEtaLabel(String time) {
+    return 'Yeroo eegamaa $time';
+  }
+
+  @override
+  String passengerDashboardSeatsCount(int count) {
+    return 'Teessoo $count';
+  }
+
+  @override
+  String get passengerDashboardAcOn => 'AC mallattee';
+
+  @override
+  String get passengerDashboardIveArrived => 'Dhufe';
+
+  @override
   String get passengerBookingsTitle => 'Teessoo';
 
   @override
@@ -364,4 +400,29 @@ class AppLocalizationsOm extends AppLocalizations {
 
   @override
   String get preferredRoutes => 'Daandii filatame';
+
+  @override
+  String get emergencyAlertTitle => 'Akeekkachiisa balaa';
+
+  @override
+  String get emergencyAlertSubtitle => 'Balaa maal?';
+
+  @override
+  String get emergencyTypeCarMalfunction => 'Konkolataa dogoggora';
+
+  @override
+  String get emergencyTypeMedical => 'Balaa fayyaa';
+
+  @override
+  String get emergencyTypeSuspicious => 'Sochii shakkii qabu';
+
+  @override
+  String get emergencyTypeAccident => 'Balaa konkolaachisummaa';
+
+  @override
+  String get emergencySendAlert => 'Akeekkachiisa balaa ergi';
+
+  @override
+  String get emergencySendFailed =>
+      'Erguu hin dandeenye. Irra deebi\'ii yookiin tajaajila balaa bilbilaa.';
 }

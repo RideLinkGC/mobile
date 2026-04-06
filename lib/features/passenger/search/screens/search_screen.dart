@@ -3,9 +3,8 @@ import 'package:gebeta_gl/gebeta_gl.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../../../core/services/gebeta_maps_service.dart';
+import '../../../../core/services/place_search_storage.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_shadows.dart';
@@ -13,7 +12,6 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/gebeta_map_widget.dart';
 import '../../../../core/widgets/location_search_field.dart';
 import '../../../../core/widgets/shell_drawer_scope.dart';
-import '../../../auth/providers/auth_provider.dart';
 import '../providers/search_provider.dart';
 import '../widgets/filter_rides_sheet.dart';
 import '../widgets/ride_search_cards.dart';
@@ -28,18 +26,19 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   GeocodingResult? _originResult;
   GeocodingResult? _destinationResult;
-  List<String> _recentSearches = [];
+  List<RouteSearchHistoryEntry> _routeHistory = [];
   LatLng? _userLocation;
 
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _availableSectionKey = GlobalKey();
 
-  static const _recentSearchesKey = 'recent_searches';
-
   @override
   void initState() {
     super.initState();
-    _loadRecentSearches();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadRouteHistory();
+    });
     _loadUserLocation();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -63,23 +62,13 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  Future<void> _loadRecentSearches() async {
-    final prefs = await SharedPreferences.getInstance();
-    final searches = prefs.getStringList(_recentSearchesKey) ?? [];
-    if (mounted) setState(() => _recentSearches = searches);
+  Future<void> _loadRouteHistory() async {
+    final storage = context.read<PlaceSearchStorage>();
+    final list = await storage.getRouteHistory();
+    if (mounted) setState(() => _routeHistory = list);
   }
 
-  Future<void> _saveSearch(String search) async {
-    _recentSearches.remove(search);
-    _recentSearches.insert(0, search);
-    if (_recentSearches.length > 10) {
-      _recentSearches = _recentSearches.sublist(0, 10);
-    }
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_recentSearchesKey, _recentSearches);
-  }
-
-  void _onSearch() {
+  Future<void> _onSearch() async {
     if (_originResult == null || _destinationResult == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -87,10 +76,11 @@ class _SearchScreenState extends State<SearchScreen> {
       );
       return;
     }
-    final searchLabel =
-        '${_originResult!.name} → ${_destinationResult!.name}';
-    _saveSearch(searchLabel);
+    final storage = context.read<PlaceSearchStorage>();
+    await storage.addRouteSearch(_originResult!, _destinationResult!);
+    await _loadRouteHistory();
 
+    if (!mounted) return;
     context.push('/search-results', extra: {
       'origin': _originResult!.name,
       'destination': _destinationResult!.name,
@@ -122,11 +112,11 @@ class _SearchScreenState extends State<SearchScreen> {
           l10n: l10n,
           initialOrigin: _originResult,
           initialDestination: _destinationResult,
-          recentSearches: _recentSearches,
+          routeHistory: _routeHistory,
           onClearRecents: () async {
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.remove(_recentSearchesKey);
-            if (mounted) setState(() => _recentSearches = []);
+            final storage = context.read<PlaceSearchStorage>();
+            await storage.clearRouteHistory();
+            if (mounted) setState(() => _routeHistory = []);
           },
           onSearchPressed: (o, d) {
             setState(() {
@@ -179,10 +169,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
-    final auth = context.watch<AuthProvider>();
-    final user = auth.user;
-    final userImage = user?.image;
- 
+
     return Scaffold(
       appBar:AppBar(
         title: Text("Find Rides"),centerTitle: true,
@@ -503,7 +490,7 @@ class _PlanRideSheet extends StatefulWidget {
   final AppLocalizations l10n;
   final GeocodingResult? initialOrigin;
   final GeocodingResult? initialDestination;
-  final List<String> recentSearches;
+  final List<RouteSearchHistoryEntry> routeHistory;
   final VoidCallback onClearRecents;
   final void Function(GeocodingResult? o, GeocodingResult? d) onSearchPressed;
   final void Function(GeocodingResult? o, GeocodingResult? d) onApplyOnly;
@@ -512,7 +499,7 @@ class _PlanRideSheet extends StatefulWidget {
     required this.l10n,
     required this.initialOrigin,
     required this.initialDestination,
-    required this.recentSearches,
+    required this.routeHistory,
     required this.onClearRecents,
     required this.onSearchPressed,
     required this.onApplyOnly,
@@ -592,7 +579,7 @@ class _PlanRideSheetState extends State<_PlanRideSheet> {
               onPressed: () => widget.onApplyOnly(_origin, _destination),
               child: const Text('Save route only'),
             ),
-            if (widget.recentSearches.isNotEmpty) ...[
+            if (widget.routeHistory.isNotEmpty) ...[
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -608,25 +595,26 @@ class _PlanRideSheetState extends State<_PlanRideSheet> {
                 ],
               ),
               const SizedBox(height: 8),
-              ...widget.recentSearches.map(
-                (search) => ListTile(
+              ...widget.routeHistory.map(
+                (entry) => ListTile(
                   dense: true,
                   leading: const Icon(Icons.history, size: 20),
-                  title: Text(search, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  title: Text(
+                    entry.label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   onTap: () {
-                    final parts = search.split(' → ');
-                    if (parts.length == 2) {
-                      final router = GoRouter.of(context);
-                      Navigator.of(context).pop();
-                      router.push('/search-results', extra: {
-                        'origin': parts[0],
-                        'destination': parts[1],
-                        'originLat': 0.0,
-                        'originLng': 0.0,
-                        'destLat': 0.0,
-                        'destLng': 0.0,
-                      });
-                    }
+                    final router = GoRouter.of(context);
+                    Navigator.of(context).pop();
+                    router.push('/search-results', extra: {
+                      'origin': entry.origin.name,
+                      'destination': entry.destination.name,
+                      'originLat': entry.origin.lat,
+                      'originLng': entry.origin.lng,
+                      'destLat': entry.destination.lat,
+                      'destLng': entry.destination.lng,
+                    });
                   },
                 ),
               ),

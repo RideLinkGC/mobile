@@ -1,3 +1,4 @@
+import 'package:convex_flutter/convex_flutter.dart';
 import 'package:flutter/material.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
@@ -11,12 +12,14 @@ enum AuthState { initial, loading, authenticated, unauthenticated, error }
 class AuthProvider extends ChangeNotifier {
   final ApiClient _apiClient;
   final StorageService _storage;
+  final ConvexClient? _convex;
 
   AuthState _state = AuthState.initial;
   UserModel? _user;
   String? _errorMessage;
 
-  AuthProvider(this._apiClient, this._storage);
+  AuthProvider(this._apiClient, this._storage, {ConvexClient? convex})
+      : _convex = convex;
 
   AuthState get state => _state;
   UserModel? get user => _user;
@@ -30,6 +33,7 @@ class AuthProvider extends ChangeNotifier {
     final token = await _storage.getAccessToken();
     if (token == null) {
       _state = AuthState.unauthenticated;
+      await _syncConvexAuth();
       notifyListeners();
       return;
     }
@@ -55,6 +59,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('checkAuthStatus error: $e');
       _state = AuthState.unauthenticated;
     }
+    await _syncConvexAuth();
     notifyListeners();
   }
 
@@ -90,6 +95,7 @@ class AuthProvider extends ChangeNotifier {
       }
 
       _state = AuthState.authenticated;
+      await _syncConvexAuth();
       notifyListeners();
       return true;
     } on ApiException catch (e) {
@@ -181,6 +187,7 @@ class AuthProvider extends ChangeNotifier {
                 sessionData!['user'] as Map<String, dynamic>);
             await _persistUserIds(_user!);
             _state = AuthState.authenticated;
+            await _syncConvexAuth();
             notifyListeners();
             return true;
           }
@@ -190,6 +197,7 @@ class AuthProvider extends ChangeNotifier {
       }
 
       _state = AuthState.unauthenticated;
+      await _syncConvexAuth();
       notifyListeners();
       return true;
     } on ApiException catch (e) {
@@ -232,8 +240,45 @@ class AuthProvider extends ChangeNotifier {
     }
 
     _state = AuthState.authenticated;
+    await _syncConvexAuth();
     notifyListeners();
     return true;
+  }
+
+  /// Refreshes the Convex JWT from your backend and applies it to [ConvexClient].
+  /// Call before Convex subscriptions that use `requireAuth` (e.g. live tracking).
+  Future<void> syncConvexAuth() => _syncConvexAuth();
+
+  /// Pushes the backend-issued Convex JWT into [ConvexClient] so queries that
+  /// call `requireAuth` succeed (chat, tracking, notifications).
+  Future<void> _syncConvexAuth() async {
+    final convex = _convex;
+    if (convex == null) return;
+    try {
+      if (_state != AuthState.authenticated) {
+        await convex.setAuth(token: null);
+        return;
+      }
+      final jwt = await fetchConvexToken();
+      if (jwt != null) {
+        await convex.setAuth(token: jwt);
+        return;
+      }
+      final stored = await _storage.getConvexJwt();
+      if (stored != null) {
+        await convex.setAuth(token: stored);
+      } else {
+        await convex.setAuth(token: null);
+      }
+    } catch (e) {
+      debugPrint('Convex auth sync: $e');
+      final stored = await _storage.getConvexJwt();
+      if (stored != null && _state == AuthState.authenticated) {
+        try {
+          await convex.setAuth(token: stored);
+        } catch (_) {}
+      }
+    }
   }
 
   /// Fetch a JWT for Convex real-time auth.
@@ -261,9 +306,10 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _apiClient.post(ApiEndpoints.signOut);
     } catch (_) {}
-    await _storage.clearTokens();
     _user = null;
     _state = AuthState.unauthenticated;
+    await _storage.clearTokens();
+    await _syncConvexAuth();
     notifyListeners();
   }
 

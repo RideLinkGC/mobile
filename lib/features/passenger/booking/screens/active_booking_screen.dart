@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
+import '../../../emergency/widgets/emergency_alert_sheet.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
@@ -233,7 +234,8 @@ class _ActiveBookingScreenState extends State<ActiveBookingScreen> {
             AppButton(
               text: l10n.sos,
               icon: Icons.emergency,
-              onPressed: () => context.push('/sos/${widget.tripId}'),
+              onPressed: () =>
+                  showEmergencyAlertFlow(context, widget.tripId),
               backgroundColor: AppColors.sosRed,
             ),
             const SizedBox(height: 12),

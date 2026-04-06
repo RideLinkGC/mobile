@@ -79,6 +79,31 @@
   "passengerHomeActiveTrips": "Imala hojii irratti kee",
   "passengerHomeEnRouteHint": "Imala irratti · konkolaachisni fudhata kee irratti deemaa jira",
   "passengerHomeOpenLiveView": "Mul'isa kallattii banaa",
+  "passengerDashboardTitle": "Imala ammaa",
+  "passengerDashboardSosShort": "SOS",
+  "passengerDashboardMinutesAway": "Daqiiqaa {minutes} booda",
+  "@passengerDashboardMinutesAway": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "passengerDashboardTravelBanner": "Imala gaarii taasisaa!",
+  "passengerDashboardPickup": "Fudhachuu",
+  "passengerDashboardDropoff": "Gadi bu'uu",
+  "passengerDashboardEtaLabel": "Yeroo eegamaa {time}",
+  "@passengerDashboardEtaLabel": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "passengerDashboardSeatsCount": "Teessoo {count}",
+  "@passengerDashboardSeatsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "passengerDashboardAcOn": "AC mallattee",
+  "passengerDashboardIveArrived": "Dhufe",
   "passengerBookingsTitle": "Teessoo",
   "bookingSectionAwaitingYou": "Mirkanaa'ina kee eegaa jira",
   "bookingSectionPendingDriver": "Mirkanaa'ina konkolaachisaa eegaa jira",
@@ -120,5 +145,13 @@
   "scheduledTrips": "Imala qophaa'e",
   "completedTrips": "Imala xumurame",
   "about": "Waa'ee",
-  "preferredRoutes": "Daandii filatame"
+  "preferredRoutes": "Daandii filatame",
+  "emergencyAlertTitle": "Akeekkachiisa balaa",
+  "emergencyAlertSubtitle": "Balaa maal?",
+  "emergencyTypeCarMalfunction": "Konkolataa dogoggora",
+  "emergencyTypeMedical": "Balaa fayyaa",
+  "emergencyTypeSuspicious": "Sochii shakkii qabu",
+  "emergencyTypeAccident": "Balaa konkolaachisummaa",
+  "emergencySendAlert": "Akeekkachiisa balaa ergi",
+  "emergencySendFailed": "Erguu hin dandeenye. Irra deebi'ii yookiin tajaajila balaa bilbilaa."
 }

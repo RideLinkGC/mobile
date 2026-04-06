@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/enums.dart';
+import '../../../../core/services/gebeta_maps_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
@@ -22,14 +23,33 @@ class TripDetailScreen extends StatefulWidget {
 }
 
 class _TripDetailScreenState extends State<TripDetailScreen> {
+  RouteResult? _directionRoute;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final tripId = widget.tripId;
-      if (tripId != null && tripId.isNotEmpty) {
-        context.read<TripProvider>().getTripById(tripId);
-        context.read<TripProvider>().loadTripBookings(tripId);
+      if (tripId == null || tripId.isEmpty) return;
+
+      final tripProvider = context.read<TripProvider>();
+      final mapsService = context.read<GebetaMapsService>();
+
+      await tripProvider.getTripById(tripId);
+      await tripProvider.loadTripBookings(tripId);
+      if (!mounted) return;
+
+      final trip = tripProvider.selectedTrip;
+      if (trip != null && trip.routeCoordinates.length >= 2) {
+        final first = trip.routeCoordinates.first;
+        final last = trip.routeCoordinates.last;
+        final route = await mapsService.getRoute(
+          originLat: first.lat,
+          originLng: first.lng,
+          destLat: last.lat,
+          destLng: last.lng,
+        );
+        if (mounted) setState(() => _directionRoute = route);
       }
     });
   }
@@ -271,11 +291,24 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   }
 
   List<MapPolyline> _buildMapPolylines(dynamic trip) {
+    final rr = _directionRoute;
+    if (rr != null && rr.polylinePoints.length >= 2) {
+      return [
+        MapPolyline(
+          points: rr.polylinePoints
+              .where((p) => p.length >= 2)
+              .map((p) => LatLng(p[0], p[1]))
+              .toList(),
+          color: AppColors.primaryMapHex,
+          width: 4,
+        ),
+      ];
+    }
     if (trip.routeCoordinates.isEmpty) return [];
     final points = trip.routeCoordinates
         .map((c) => LatLng(c.lat, c.lng))
         .toList();
-    return [MapPolyline(points: points, color: '#188AEC', width: 4)];
+    return [MapPolyline(points: points, color: AppColors.primaryMapHex, width: 4)];
   }
 }
 
