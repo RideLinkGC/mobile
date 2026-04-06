@@ -26,6 +26,7 @@ class ApiClient {
     // Better Auth `getSession()` expects session cookies. Persist them across
     // requests (mobile has no browser cookie jar by default).
     _dio.interceptors.add(CookieManager(_cookieJar));
+    _dio.interceptors.add(_OriginForBetterAuthInterceptor());
     _dio.interceptors.add(_AuthInterceptor(_storage));
     _dio.interceptors.add(_ResponseUnwrapInterceptor());
 
@@ -135,6 +136,21 @@ class ApiClient {
       default:
         return ApiException(message: e.message ?? 'An unexpected error occurred');
     }
+  }
+}
+
+/// Better Auth may require an Origin that matches backend `FRONTEND_URL`.
+/// Express CORS in your backend allows *no* Origin for mobile, but Better Auth's
+/// trustedOrigins can still reject missing Origin for `/auth/*` calls.
+class _OriginForBetterAuthInterceptor extends Interceptor {
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    // Our ApiClient baseUrl already includes `/api`. Endpoints are like `/auth/...`.
+    // final path = options.path;
+    // if (path.startsWith('/auth/')) {
+    //   options.headers.putIfAbsent('Origin', () => AppConstants.frontendUrl);
+    // }
+    handler.next(options);
   }
 }
 

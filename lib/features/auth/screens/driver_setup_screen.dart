@@ -53,7 +53,8 @@ class _DriverSetupScreenState extends State<DriverSetupScreen> {
     );
     if (!mounted) return;
     if (ok) {
-      context.go('/register/driver-documents?done=1');
+      // Driver profile is complete; optional docs can be uploaded later in Settings.
+      context.go('/driver');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -198,7 +199,7 @@ class _DriverDocumentsBodyState extends State<_DriverDocumentsBody> {
     } on NotFoundException {
       // Some deployments mount this router under `/uploads`.
       final resp = await api.post(
-        '/uploads${ApiEndpoints.presignUpload}',
+        '/files${ApiEndpoints.presignUpload}',
         data: {
           'fileName': fileName,
           'contentType': contentType,
@@ -207,6 +208,33 @@ class _DriverDocumentsBodyState extends State<_DriverDocumentsBody> {
       );
       return Map<String, dynamic>.from(resp.data as Map);
     }
+  }
+
+  Future<void> _completeUpload(String documentId) async {
+    final api = context.read<ApiClient>();
+    try {
+      await api.post(
+        ApiEndpoints.completeUpload,
+        data: {'documentId': documentId},
+      );
+      return;
+    } on NotFoundException {
+      // Some deployments mount this router under `/uploads` or `/files`.
+    }
+
+    // Fallbacks (try common mount points)
+    try {
+      await api.post(
+        '/uploads${ApiEndpoints.completeUpload}',
+        data: {'documentId': documentId},
+      );
+      return;
+    } catch (_) {}
+
+    await api.post(
+      '/files${ApiEndpoints.completeUpload}',
+      data: {'documentId': documentId},
+    );
   }
 
   Future<void> _uploadToPresignedUrl({
@@ -246,14 +274,19 @@ class _DriverDocumentsBodyState extends State<_DriverDocumentsBody> {
         docType: 'LICENSE',
       );
       final putUrl = Uri.parse(presign['url'] as String);
+      final documentId = presign['documentId'] as String?;
+      if (documentId == null || documentId.isEmpty) {
+        throw Exception('Missing documentId from /upload');
+      }
       await _uploadToPresignedUrl(
         url: putUrl,
         file: file,
         contentType: contentType,
       );
+      await _completeUpload(documentId);
       if (!mounted) return;
       setState(() {
-        _licenseDocumentId = presign['documentId'] as String?;
+        _licenseDocumentId = documentId;
         _uploadingLicense = false;
       });
     } catch (e) {
@@ -286,11 +319,16 @@ class _DriverDocumentsBodyState extends State<_DriverDocumentsBody> {
         docType: docType,
       );
       final putUrl = Uri.parse(presign['url'] as String);
+      final documentId = presign['documentId'] as String?;
+      if (documentId == null || documentId.isEmpty) {
+        throw Exception('Missing documentId from /upload');
+      }
       await _uploadToPresignedUrl(
         url: putUrl,
         file: file,
         contentType: contentType,
       );
+      await _completeUpload(documentId);
       if (!mounted) return;
       setState(() => _uploadingId = false);
       ScaffoldMessenger.of(context).showSnackBar(
