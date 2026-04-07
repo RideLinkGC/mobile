@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import '../../../../core/constants/enums.dart';
@@ -185,6 +186,7 @@ class _BookingRequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,13 +210,16 @@ class _BookingRequestCard extends StatelessWidget {
                   children: [
                     Text(
                       _getPassengerLabel(),
-                      style: Theme.of(context).textTheme.titleSmall,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${booking.seatsBooked} seat${booking.seatsBooked > 1 ? 's' : ''} · ${booking.totalPrice.toStringAsFixed(0)} ${l10n.etb}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      style: theme.textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondaryLight,
+                            fontWeight: FontWeight.w600,
                           ),
                     ),
                   ],
@@ -222,6 +227,15 @@ class _BookingRequestCard extends StatelessWidget {
               ),
             ],
           ),
+          if (booking.createdAt != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Requested ${DateFormat('MMM d • h:mm a').format(booking.createdAt!)}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondaryLight,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [

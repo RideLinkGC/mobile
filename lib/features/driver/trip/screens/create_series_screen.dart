@@ -6,6 +6,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/enums.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/location_search_field.dart';
 import '../../../../core/services/gebeta_maps_service.dart';
@@ -177,154 +178,237 @@ class _CreateSeriesScreenState extends State<CreateSeriesScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Create Recurring Trip')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              LocationSearchField(
-                hintText: 'Origin',
-                prefixIcon: Icons.trip_origin,
-                initialValue: _originResult?.name,
-                onPlaceSelected: (r) => setState(() => _originResult = r),
+              AppCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Route',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    LocationSearchField(
+                      hintText: 'Origin',
+                      prefixIcon: Icons.trip_origin,
+                      initialValue: _originResult?.name,
+                      onPlaceSelected: (r) => setState(() => _originResult = r),
+                    ),
+                    const SizedBox(height: 14),
+                    LocationSearchField(
+                      hintText: 'Destination',
+                      prefixIcon: Icons.location_on,
+                      initialValue: _destinationResult?.name,
+                      onPlaceSelected: (r) =>
+                          setState(() => _destinationResult = r),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
-              LocationSearchField(
-                hintText: 'Destination',
-                prefixIcon: Icons.location_on,
-                initialValue: _destinationResult?.name,
-                onPlaceSelected: (r) => setState(() => _destinationResult = r),
+              const SizedBox(height: 14),
+
+              AppCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Schedule',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Days of week',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            )),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: _dayLabels.entries.map((e) {
+                        final selected = _selectedDays.contains(e.key);
+                        return FilterChip(
+                          label: Text(e.value),
+                          selected: selected,
+                          onSelected: (v) {
+                            setState(() {
+                              if (v) {
+                                _selectedDays.add(e.key);
+                              } else {
+                                _selectedDays.remove(e.key);
+                              }
+                            });
+                          },
+                          selectedColor:
+                              AppColors.primary.withValues(alpha: 0.2),
+                          checkmarkColor: AppColors.primary,
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 14),
+                    Text('Departure time',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            )),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: _pickTime,
+                      icon: const Icon(Icons.access_time, size: 18),
+                      label: Text(timeString),
+                    ),
+                    const SizedBox(height: 14),
+                    Text('Date range',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            )),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _pickStartDate,
+                            icon: const Icon(Icons.calendar_today, size: 18),
+                            label: Text(
+                                '${_startDate.day}/${_startDate.month}/${_startDate.year}'),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: Text('to'),
+                        ),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _pickEndDate,
+                            icon: const Icon(Icons.calendar_today, size: 18),
+                            label: Text(_endDate != null
+                                ? '${_endDate!.day}/${_endDate!.month}/${_endDate!.year}'
+                                : 'No end'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 24),
-              Text('Days of Week',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: _dayLabels.entries.map((e) {
-                  final selected = _selectedDays.contains(e.key);
-                  return FilterChip(
-                    label: Text(e.value),
-                    selected: selected,
-                    onSelected: (v) {
-                      setState(() {
-                        if (v) {
-                          _selectedDays.add(e.key);
-                        } else {
-                          _selectedDays.remove(e.key);
+              const SizedBox(height: 14),
+
+              AppCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Capacity & pricing',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Seats',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            )),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        IconButton.filled(
+                          onPressed: _seats > 1
+                              ? () => setState(() => _seats--)
+                              : null,
+                          icon: const Icon(Icons.remove),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            '$_seats',
+                            style: Theme.of(context).textTheme.headlineMedium,
+                          ),
+                        ),
+                        IconButton.filled(
+                          onPressed: _seats < AppConstants.maxVehicleSeats
+                              ? () => setState(() => _seats++)
+                              : null,
+                          icon: const Icon(Icons.add),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    AppTextField(
+                      controller: _priceController,
+                      hintText: 'Price per seat (ETB)',
+                      prefixIcon: Icons.payments_outlined,
+                      keyboardType: TextInputType.number,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Price is required';
+                        if (double.tryParse(v) == null) {
+                          return 'Enter a valid price';
                         }
-                      });
-                    },
-                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
-                    checkmarkColor: AppColors.primary,
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 24),
-              Text('Departure Time',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _pickTime,
-                icon: const Icon(Icons.access_time, size: 18),
-                label: Text(timeString),
-              ),
-              const SizedBox(height: 24),
-              Text('Date Range',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickStartDate,
-                      icon: const Icon(Icons.calendar_today, size: 18),
-                      label: Text(
-                          '${_startDate.day}/${_startDate.month}/${_startDate.year}'),
+                        return null;
+                      },
                     ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('to'),
-                  ),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickEndDate,
-                      icon: const Icon(Icons.calendar_today, size: 18),
-                      label: Text(_endDate != null
-                          ? '${_endDate!.day}/${_endDate!.month}/${_endDate!.year}'
-                          : 'No end'),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Max ${AppConstants.maxPricePerKmPerSeat} ETB/km/seat',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondaryLight,
+                          ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Text('Seats', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  IconButton.filled(
-                    onPressed:
-                        _seats > 1 ? () => setState(() => _seats--) : null,
-                    icon: const Icon(Icons.remove),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Text('$_seats',
-                        style: Theme.of(context).textTheme.headlineMedium),
-                  ),
-                  IconButton.filled(
-                    onPressed: _seats < AppConstants.maxVehicleSeats
-                        ? () => setState(() => _seats++)
-                        : null,
-                    icon: const Icon(Icons.add),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              AppTextField(
-                controller: _priceController,
-                hintText: 'Price per seat (ETB)',
-                prefixIcon: Icons.payments_outlined,
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Price is required';
-                  if (double.tryParse(v) == null) return 'Enter a valid price';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              Text('Subscription Options',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              SwitchListTile(
-                title: const Text('Weekly'),
-                value: _offerWeekly,
-                onChanged: (v) => setState(() => _offerWeekly = v),
-                contentPadding: EdgeInsets.zero,
-              ),
-              if (_offerWeekly)
-                AppTextField(
-                  controller: _weeklyPriceController,
-                  hintText: 'Weekly price (ETB)',
-                  prefixIcon: Icons.date_range,
-                  keyboardType: TextInputType.number,
+                  ],
                 ),
-              SwitchListTile(
-                title: const Text('Monthly'),
-                value: _offerMonthly,
-                onChanged: (v) => setState(() => _offerMonthly = v),
-                contentPadding: EdgeInsets.zero,
               ),
-              if (_offerMonthly)
-                AppTextField(
-                  controller: _monthlyPriceController,
-                  hintText: 'Monthly price (ETB)',
-                  prefixIcon: Icons.calendar_month,
-                  keyboardType: TextInputType.number,
+              const SizedBox(height: 14),
+
+              AppCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Subscriptions',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    const SizedBox(height: 10),
+                    SwitchListTile(
+                      title: const Text('Weekly'),
+                      value: _offerWeekly,
+                      onChanged: (v) => setState(() => _offerWeekly = v),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    if (_offerWeekly)
+                      AppTextField(
+                        controller: _weeklyPriceController,
+                        hintText: 'Weekly price (ETB)',
+                        prefixIcon: Icons.date_range,
+                        keyboardType: TextInputType.number,
+                      ),
+                    SwitchListTile(
+                      title: const Text('Monthly'),
+                      value: _offerMonthly,
+                      onChanged: (v) => setState(() => _offerMonthly = v),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    if (_offerMonthly)
+                      AppTextField(
+                        controller: _monthlyPriceController,
+                        hintText: 'Monthly price (ETB)',
+                        prefixIcon: Icons.calendar_month,
+                        keyboardType: TextInputType.number,
+                      ),
+                  ],
                 ),
-              const SizedBox(height: 32),
+              ),
+              const SizedBox(height: 18),
               AppButton(
                 text: 'Create Recurring Trip',
                 onPressed: _handleSubmit,

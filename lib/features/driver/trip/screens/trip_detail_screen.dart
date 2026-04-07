@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -24,6 +26,7 @@ class TripDetailScreen extends StatefulWidget {
 
 class _TripDetailScreenState extends State<TripDetailScreen> {
   RouteResult? _directionRoute;
+  final GlobalKey<GebetaMapWidgetState> _mapKey = GlobalKey<GebetaMapWidgetState>();
 
   @override
   void initState() {
@@ -49,9 +52,48 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           destLat: last.lat,
           destLng: last.lng,
         );
-        if (mounted) setState(() => _directionRoute = route);
+        if (mounted) {
+          setState(() => _directionRoute = route);
+          WidgetsBinding.instance.addPostFrameCallback((_) => _fitMapToRoute());
+        }
       }
     });
+  }
+
+  void _fitMapToRoute() {
+    final state = _mapKey.currentState;
+    if (state == null) return;
+    final trip = context.read<TripProvider>().selectedTrip;
+    if (trip == null) return;
+
+    final points = <LatLng>[];
+    final rr = _directionRoute;
+    if (rr != null && rr.polylinePoints.length >= 2) {
+      for (final p in rr.polylinePoints) {
+        if (p.length >= 2) points.add(LatLng(p[0], p[1]));
+      }
+    } else if (trip.routeCoordinates.length >= 2) {
+      points.addAll(trip.routeCoordinates.map((c) => LatLng(c.lat, c.lng)));
+    } else {
+      return;
+    }
+
+    var minLat = points.first.latitude;
+    var maxLat = minLat;
+    var minLng = points.first.longitude;
+    var maxLng = minLng;
+    for (final p in points) {
+      minLat = math.min(minLat, p.latitude);
+      maxLat = math.max(maxLat, p.latitude);
+      minLng = math.min(minLng, p.longitude);
+      maxLng = math.max(maxLng, p.longitude);
+    }
+    const pad = 0.004;
+    state.fitBounds(
+      LatLng(minLat - pad, minLng - pad),
+      LatLng(maxLat + pad, maxLng + pad),
+      padding: 48,
+    );
   }
 
   Future<void> _handleUpdateStatus(TripStatus status) async {
@@ -144,151 +186,256 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     final timeFmt = DateFormat.jm();
     final confirmedBookings =
         tripBookings.where((b) => b.status == BookingStatus.confirmed).toList();
+    final pendingCount =
+        tripBookings.where((b) => b.status == BookingStatus.pending).length;
+    final rr = _directionRoute;
+    final etaMinutes = rr != null && rr.durationMinutes > 0
+        ? rr.durationMinutes.round().clamp(1, 24 * 60)
+        : null;
+    final distanceKm = rr != null && rr.distanceKm > 0 ? rr.distanceKm : null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.tripSchedule),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _StatusChip(status: trip.status),
-            const SizedBox(height: 20),
-            if (trip.routeCoordinates.isNotEmpty) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  height: 200,
-                  child: GebetaMapWidget(
+      body: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: MediaQuery.sizeOf(context).height * 0.56,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  GebetaMapWidget(
+                    key: _mapKey,
                     initialZoom: 13,
                     markers: _buildMapMarkers(trip),
                     polylines: _buildMapPolylines(trip),
                     showUserLocation: false,
+                    interactive: true,
                   ),
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _DetailRow(
-                    icon: Icons.location_on_outlined,
-                    label: l10n.origin,
-                    value: trip.origin,
-                  ),
-                  const SizedBox(height: 12),
-                  _DetailRow(
-                    icon: Icons.flag_outlined,
-                    label: l10n.destination,
-                    value: trip.destination,
-                  ),
-                  const SizedBox(height: 12),
-                  _DetailRow(
-                    icon: Icons.schedule,
-                    label: l10n.departureTime,
-                    value: timeFmt.format(trip.departureTime),
-                  ),
-                  const SizedBox(height: 12),
-                  _DetailRow(
-                    icon: Icons.event_seat_outlined,
-                    label: l10n.seats,
-                    value: '${trip.seatsLeft} / ${trip.availableSeats}',
-                  ),
-                  const SizedBox(height: 12),
-                  _DetailRow(
-                    icon: Icons.payments_outlined,
-                    label: l10n.pricePerSeat,
-                    value: '${trip.pricePerSeat} ${l10n.etb}${l10n.perSeat}',
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.55),
+                            Colors.black.withValues(alpha: 0.08),
+                          ],
+                        ),
+                      ),
+                      child: SafeArea(
+                        bottom: false,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor:
+                                    Theme.of(context).scaffoldBackgroundColor,
+                                child: IconButton(
+                                  icon: const Icon(Icons.arrow_back),
+                                  onPressed: () => context.pop(),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  l10n.tripSchedule,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(width: 52),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            Text(
-              'Confirmed Passengers',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            ...confirmedBookings.map(
-              (booking) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: AppCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: AppColors.primaryLight.withValues(alpha: 0.3),
-                        child: Text(
-                          _getPassengerDisplayName(booking).substring(0, 1).toUpperCase(),
-                          style: const TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _getPassengerDisplayName(booking),
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            if (booking.pickUpPoint != null || booking.dropOffPoint != null)
-                              Text(
-                                '${booking.pickUpPoint ?? '—'} → ${booking.dropOffPoint ?? '—'}',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: AppColors.textSecondaryLight,
-                                    ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _StatusChip(status: trip.status),
+                  const SizedBox(height: 12),
+                  AppCard(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${trip.origin} → ${trip.destination}',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
                               ),
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _InfoChip(
+                              icon: Icons.schedule,
+                              label: timeFmt.format(trip.departureTime),
+                            ),
+                            _InfoChip(
+                              icon: Icons.timelapse_rounded,
+                              label: etaMinutes != null ? '$etaMinutes min' : '-- min',
+                            ),
+                            _InfoChip(
+                              icon: Icons.route_rounded,
+                              label: distanceKm != null
+                                  ? '${distanceKm.toStringAsFixed(1)} ${l10n.km}'
+                                  : '-- ${l10n.km}',
+                            ),
+                            _InfoChip(
+                              icon: Icons.event_seat_outlined,
+                              label: '${trip.seatsLeft} / ${trip.availableSeats} ${l10n.seats}',
+                            ),
                           ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            _Pill(
+                              label: 'Confirmed',
+                              value: confirmedBookings.length.toString(),
+                              color: AppColors.success,
+                            ),
+                            const SizedBox(width: 8),
+                            _Pill(
+                              label: 'Pending',
+                              value: pendingCount.toString(),
+                              color: AppColors.warning,
+                            ),
+                            const Spacer(),
+                            Text(
+                              '${trip.pricePerSeat.toStringAsFixed(0)} ${l10n.etb}${l10n.perSeat}',
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 18),
+                  if (trip.status == TripStatus.scheduled) ...[
+                    AppButton(
+                      text: 'Start Trip',
+                      icon: Icons.play_arrow,
+                      onPressed: () => _handleUpdateStatus(TripStatus.inProgress),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  if (trip.status == TripStatus.inProgress) ...[
+                    AppButton(
+                      text: 'Complete Trip',
+                      icon: Icons.check_circle,
+                      onPressed: () => _handleUpdateStatus(TripStatus.completed),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  if (trip.status == TripStatus.scheduled ||
+                      trip.status == TripStatus.inProgress) ...[
+                    AppButton(
+                      text: l10n.bookingRequests,
+                      icon: Icons.person_add_outlined,
+                      isOutlined: true,
+                      onPressed: () => context.push('/booking-requests/${trip.id}'),
+                    ),
+                    const SizedBox(height: 10),
+                    AppButton(
+                      text: 'Cancel Trip',
+                      icon: Icons.cancel_outlined,
+                      isOutlined: true,
+                      foregroundColor: AppColors.error,
+                      onPressed: () => _handleUpdateStatus(TripStatus.canceled),
+                    ),
+                    const SizedBox(height: 18),
+                  ],
+                  Text(
+                    'Confirmed Passengers',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
-            if (trip.status == TripStatus.scheduled) ...[
-              AppButton(
-                text: 'Start Trip',
-                icon: Icons.play_arrow,
-                onPressed: () => _handleUpdateStatus(TripStatus.inProgress),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final booking = confirmedBookings[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: AppCard(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: AppColors.primaryLight.withValues(alpha: 0.3),
+                            child: Text(
+                              _getPassengerDisplayName(booking).substring(0, 1).toUpperCase(),
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _getPassengerDisplayName(booking),
+                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${booking.pickUpPoint ?? '—'} → ${booking.dropOffPoint ?? '—'}',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: AppColors.textSecondaryLight,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+                childCount: confirmedBookings.length,
               ),
-              const SizedBox(height: 12),
-            ],
-            if (trip.status == TripStatus.inProgress) ...[
-              AppButton(
-                text: 'Complete Trip',
-                icon: Icons.check_circle,
-                onPressed: () => _handleUpdateStatus(TripStatus.completed),
-              ),
-              const SizedBox(height: 12),
-            ],
-            if (trip.status == TripStatus.scheduled || trip.status == TripStatus.inProgress) ...[
-              AppButton(
-                text: l10n.bookingRequests,
-                icon: Icons.person_add_outlined,
-                isOutlined: true,
-                onPressed: () => context.push('/booking-requests/${trip.id}'),
-              ),
-              const SizedBox(height: 12),
-              AppButton(
-                text: 'Cancel Trip',
-                icon: Icons.cancel_outlined,
-                isOutlined: true,
-                foregroundColor: AppColors.error,
-                onPressed: () => _handleUpdateStatus(TripStatus.canceled),
-              ),
-            ],
-          ],
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -336,6 +483,80 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   }
 }
 
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _InfoChip({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: scheme.onSurfaceVariant),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _Pill({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _StatusChip extends StatelessWidget {
   final TripStatus status;
 
@@ -380,47 +601,6 @@ class _StatusChip extends StatelessWidget {
               ),
         ),
       ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _DetailRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: AppColors.primary),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondaryLight,
-                    ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

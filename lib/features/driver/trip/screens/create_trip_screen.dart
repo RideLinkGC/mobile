@@ -8,6 +8,7 @@ import '../../../../core/services/gebeta_maps_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/gebeta_map_widget.dart';
 import '../../../../core/widgets/location_search_field.dart';
@@ -265,164 +266,242 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.createTrip)),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  height: 220,
-                  child: GebetaMapWidget(
-                    key: _mapKey,
-                    initialZoom: 13,
-                    onTap: _onMapTap,
-                    markers: _markers,
-                    polylines: _polylines,
-                    showUserLocation: true,
+              AppCard(
+                padding: EdgeInsets.zero,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    height: 220,
+                    child: GebetaMapWidget(
+                      key: _mapKey,
+                      initialZoom: 13,
+                      onTap: _onMapTap,
+                      markers: _markers,
+                      polylines: _polylines,
+                      showUserLocation: true,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Text(
                 _pickingOrigin
-                    ? 'Tap the map to set origin'
+                    ? 'Step 1: tap the map to set origin'
                     : _destinationResult == null
-                        ? 'Tap the map to set destination'
-                        : 'Route set! Adjust below if needed.',
+                        ? 'Step 2: tap the map to set destination'
+                        : 'Route ready — review details below.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondaryLight,
+                      fontWeight: FontWeight.w600,
                     ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
-              LocationSearchField(
-                hintText: l10n.origin,
-                prefixIcon: Icons.trip_origin,
-                initialValue: _originResult?.name,
-                onPlaceSelected: (result) {
-                  setState(() => _originResult = result);
-                  _tryLoadRoute();
-                },
-              ),
-              const SizedBox(height: 16),
-              LocationSearchField(
-                hintText: l10n.destination,
-                prefixIcon: Icons.location_on,
-                initialValue: _destinationResult?.name,
-                onPlaceSelected: (result) {
-                  setState(() => _destinationResult = result);
-                  _tryLoadRoute();
-                },
-              ),
-              if (_route != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  '${_route!.distanceKm.toStringAsFixed(1)} km · ${_route!.durationMinutes.toStringAsFixed(0)} min',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.primary,
+              const SizedBox(height: 14),
+
+              AppCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Route',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    LocationSearchField(
+                      hintText: l10n.origin,
+                      prefixIcon: Icons.trip_origin,
+                      initialValue: _originResult?.name,
+                      onPlaceSelected: (result) {
+                        setState(() => _originResult = result);
+                        _tryLoadRoute();
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    LocationSearchField(
+                      hintText: l10n.destination,
+                      prefixIcon: Icons.location_on,
+                      initialValue: _destinationResult?.name,
+                      onPlaceSelected: (result) {
+                        setState(() => _destinationResult = result);
+                        _tryLoadRoute();
+                      },
+                    ),
+                    if (_route != null) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        '${_route!.distanceKm.toStringAsFixed(1)} ${l10n.km} · ${_route!.durationMinutes.toStringAsFixed(0)} min',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                        textAlign: TextAlign.center,
                       ),
-                  textAlign: TextAlign.center,
+                    ],
+                  ],
                 ),
-              ],
-              const SizedBox(height: 24),
-              Text(l10n.departureTime,
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickDate,
-                      icon: const Icon(Icons.calendar_today, size: 18),
-                      label: Text(dateString),
+              ),
+              const SizedBox(height: 14),
+
+              AppCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Schedule',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickTime,
-                      icon: const Icon(Icons.access_time, size: 18),
-                      label: Text(timeString),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _pickDate,
+                            icon: const Icon(Icons.calendar_today, size: 18),
+                            label: Text(dateString),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _pickTime,
+                            icon: const Icon(Icons.access_time, size: 18),
+                            label: Text(timeString),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Text(l10n.seats, style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  IconButton.filled(
-                    onPressed:
-                        _seats > 1 ? () => setState(() => _seats--) : null,
-                    icon: const Icon(Icons.remove),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Text(
-                      '$_seats',
-                      style: Theme.of(context).textTheme.headlineMedium,
+                    const SizedBox(height: 10),
+                    Text(
+                      'Commute windows: 06:00–10:00 and 17:00–20:00',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondaryLight,
+                          ),
                     ),
-                  ),
-                  IconButton.filled(
-                    onPressed: _seats < AppConstants.maxVehicleSeats
-                        ? () => setState(() => _seats++)
-                        : null,
-                    icon: const Icon(Icons.add),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              AppTextField(
-                controller: _priceController,
-                hintText: '${l10n.pricePerSeat} (${l10n.etb})',
-                prefixIcon: Icons.payments_outlined,
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Price is required';
-                  final price = double.tryParse(v);
-                  if (price == null || price <= 0) return 'Enter a valid price';
-                  return null;
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 4, left: 4),
-                child: Text(
-                  'Max ${AppConstants.maxPricePerKmPerSeat} ${l10n.etb}/${l10n.km}/seat',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: AppColors.textSecondaryLight),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-              SwitchListTile(
-                title: Text(l10n.subscription),
-                subtitle: const Text('Allow weekly/monthly subscriptions'),
-                value: _allowSubscriptions,
-                onChanged: (v) => setState(() => _allowSubscriptions = v),
-                contentPadding: EdgeInsets.zero,
+              const SizedBox(height: 14),
+
+              AppCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Capacity & pricing',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(l10n.seats,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            )),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        IconButton.filled(
+                          onPressed:
+                              _seats > 1 ? () => setState(() => _seats--) : null,
+                          icon: const Icon(Icons.remove),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            '$_seats',
+                            style: Theme.of(context).textTheme.headlineMedium,
+                          ),
+                        ),
+                        IconButton.filled(
+                          onPressed: _seats < AppConstants.maxVehicleSeats
+                              ? () => setState(() => _seats++)
+                              : null,
+                          icon: const Icon(Icons.add),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    AppTextField(
+                      controller: _priceController,
+                      hintText: '${l10n.pricePerSeat} (${l10n.etb})',
+                      prefixIcon: Icons.payments_outlined,
+                      keyboardType: TextInputType.number,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Price is required';
+                        final price = double.tryParse(v);
+                        if (price == null || price <= 0) {
+                          return 'Enter a valid price';
+                        }
+                        return null;
+                      },
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6, left: 4),
+                      child: Text(
+                        'Max ${AppConstants.maxPricePerKmPerSeat} ${l10n.etb}/${l10n.km}/seat',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: AppColors.textSecondaryLight),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              if (_allowSubscriptions) ...[
-                const SizedBox(height: 8),
-                AppTextField(
-                  controller: _weeklyPriceController,
-                  hintText: '${l10n.weekly} price (${l10n.etb})',
-                  prefixIcon: Icons.date_range,
-                  keyboardType: TextInputType.number,
+              const SizedBox(height: 14),
+
+              AppCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Subscriptions (optional)',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    const SizedBox(height: 6),
+                    SwitchListTile(
+                      title: Text(l10n.subscription),
+                      subtitle: const Text('Allow weekly/monthly subscriptions'),
+                      value: _allowSubscriptions,
+                      onChanged: (v) => setState(() => _allowSubscriptions = v),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    if (_allowSubscriptions) ...[
+                      const SizedBox(height: 8),
+                      AppTextField(
+                        controller: _weeklyPriceController,
+                        hintText: '${l10n.weekly} price (${l10n.etb})',
+                        prefixIcon: Icons.date_range,
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        controller: _monthlyPriceController,
+                        hintText: '${l10n.monthly} price (${l10n.etb})',
+                        prefixIcon: Icons.calendar_month,
+                        keyboardType: TextInputType.number,
+                      ),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 12),
-                AppTextField(
-                  controller: _monthlyPriceController,
-                  hintText: '${l10n.monthly} price (${l10n.etb})',
-                  prefixIcon: Icons.calendar_month,
-                  keyboardType: TextInputType.number,
-                ),
-              ],
-              const SizedBox(height: 32),
+              ),
+              const SizedBox(height: 18),
               AppButton(
                 text: l10n.createTrip,
                 onPressed: _handleSubmit,

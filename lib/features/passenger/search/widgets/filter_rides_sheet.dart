@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_shadows.dart';
 import '../providers/search_provider.dart';
 
@@ -331,77 +330,6 @@ class _FilterRidesSheetState extends State<FilterRidesSheet> {
         boxShadow: AppShadows.softCard(context),
       ),
       child: child,
-    );
-  }
-
-  Widget _tierCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    final scheme = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-          decoration: BoxDecoration(
-            color: scheme.surfaceDim.withAlpha(125),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: scheme.primary.withValues(alpha: 0.32),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : AppShadows.softCard(context),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              if (selected)
-                Positioned(
-                  top: -4,
-                  right: -4,
-                  child: Icon(Icons.check_circle_rounded,
-                      size: 18, color: scheme.primary),
-                ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(icon, size: 22, color: scheme.primary),
-                  const SizedBox(height: 8),
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 

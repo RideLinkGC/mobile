@@ -262,6 +262,12 @@ abstract class AppLocalizations {
   /// **'Home'**
   String get home;
 
+  /// No description provided for @driverDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver dashboard'**
+  String get driverDashboardTitle;
+
   /// No description provided for @trips.
   ///
   /// In en, this message translates to:

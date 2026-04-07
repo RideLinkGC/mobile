@@ -6,7 +6,6 @@ import 'package:ridelink/l10n/app_localizations.dart';
 import '../../../../core/constants/enums.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/shell_drawer_scope.dart';
-import '../models/booking_model.dart';
 import '../models/passenger_booking_list_item.dart';
 import '../providers/booking_provider.dart';
 import '../widgets/passenger_booking_list_card.dart';

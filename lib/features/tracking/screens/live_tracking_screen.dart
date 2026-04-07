@@ -292,7 +292,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
                                   style: Theme.of(context)
                                       .textTheme
                                       .titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                      ?.copyWith(fontWeight: FontWeight.w800),
                                 ),
                                 Text(
                                   '$vehicleInfo • $rating ★',
@@ -308,54 +308,25 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                l10n.eta,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(
-                                        color: AppColors.textSecondaryLight),
-                              ),
-                              Text(
-                                _route != null && _route!.durationMinutes > 0
-                                    ? '${_route!.durationMinutes.round().clamp(1, 24 * 60)} min'
-                                    : '-- min',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w600),
-                              ),
-                            ],
+                          _InfoChip(
+                            icon: Icons.timelapse_rounded,
+                            label: _route != null && _route!.durationMinutes > 0
+                                ? '${_route!.durationMinutes.round().clamp(1, 24 * 60)} min'
+                                : '-- min',
+                            caption: l10n.eta,
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'Distance',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(
-                                        color: AppColors.textSecondaryLight),
-                              ),
-                              Text(
-                                _route != null && _route!.distanceKm > 0
-                                    ? '${_route!.distanceKm.toStringAsFixed(1)} km'
-                                    : _trip != null && _trip!.distanceKm > 0
-                                        ? '${_trip!.distanceKm.toStringAsFixed(1)} km'
-                                        : '-- km',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w600),
-                              ),
-                            ],
+                          _InfoChip(
+                            icon: Icons.route_rounded,
+                            label: _route != null && _route!.distanceKm > 0
+                                ? '${_route!.distanceKm.toStringAsFixed(1)} km'
+                                : _trip != null && _trip!.distanceKm > 0
+                                    ? '${_trip!.distanceKm.toStringAsFixed(1)} km'
+                                    : '-- km',
+                            caption: 'Distance',
                           ),
                         ],
                       ),
@@ -403,6 +374,57 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
               backgroundColor: AppColors.sosRed,
               child: const Icon(Icons.emergency, color: Colors.white),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String caption;
+  const _InfoChip({
+    required this.icon,
+    required this.label,
+    required this.caption,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: scheme.primary),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                caption,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondaryLight,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
           ),
         ],
       ),

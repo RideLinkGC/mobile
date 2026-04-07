@@ -90,6 +90,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get home => 'Home';
 
   @override
+  String get driverDashboardTitle => 'Driver dashboard';
+
+  @override
   String get trips => 'Trips';
 
   @override
