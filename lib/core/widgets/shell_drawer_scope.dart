@@ -27,12 +27,14 @@ class ShellDrawerScope extends InheritedWidget {
 
 /// Opens the shell drawer; use as [AppBar.leading] on main-tab screens.
 class ShellMenuButton extends StatelessWidget {
-  const ShellMenuButton({super.key});
-
+  const ShellMenuButton({super.key, this.color});
+ final Color? color;
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: const Icon(Icons.menu_rounded),
+      icon: Icon(Icons.menu_rounded,
+      color: color ?? Theme.of(context).colorScheme.onSurface,
+      ),
       tooltip: 'Menu',
       onPressed: () => ShellDrawerScope.open(context),
     );

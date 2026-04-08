@@ -14,10 +14,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/gebeta_map_widget.dart';
 import '../../../../core/widgets/shell_drawer_scope.dart';
 import '../../../auth/providers/auth_provider.dart';
-import '../../../emergency/widgets/emergency_alert_sheet.dart';
 import '../../trip/providers/trip_provider.dart';
 import '../widgets/driver_current_trip_card.dart';
-import '../widgets/driver_greeting_banner.dart';
 import '../widgets/driver_trip_list_card.dart';
 
 class DriverHomeScreen extends StatefulWidget {
@@ -35,7 +33,6 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
   LatLng? _userLocation;
   TripModel? _featuredTrip;
   RouteResult? _directionRoute;
-  bool _showBanner = true;
 
   @override
   void initState() {
@@ -161,8 +158,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
     final l10n = AppLocalizations.of(context)!;
     final authProvider = context.watch<AuthProvider>();
     final tripProvider = context.watch<TripProvider>();
-    final driverName = authProvider.user?.name ?? 'Driver';
+    authProvider.user?.name ?? 'Driver';
     final trips = tripProvider.driverTrips;
+    final now = DateTime.now();
 
     final featured = _pickFeaturedTrip(trips);
     if (featured != null && _featuredTrip?.id != featured.id) {
@@ -176,37 +174,27 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
     final distanceKm = rr != null && rr.distanceKm > 0 ? rr.distanceKm : null;
 
     final tripBookings = tripProvider.tripBookings;
-    final pendingCount =
-        tripBookings.where((b) => b.status == BookingStatus.pending).length;
+    tripBookings.where((b) => b.status == BookingStatus.pending).length;
 
     final screenH = MediaQuery.sizeOf(context).height;
     final mapHeight = screenH * _kMapHeightFraction;
 
-    final greeting = '${driverGreetingForNow(DateTime.now())}, $driverName';
-    final bannerSubtitle = featured == null
-        ? l10n.createTrip
-        : pendingCount > 0
-            ? 'You have $pendingCount booking request(s) waiting.'
-            : 'Your next trip is ready when you are.';
+    final scheduledTrips = trips
+        .where((t) => t.status == TripStatus.scheduled)
+        .toList()
+      ..sort((a, b) => a.departureTime.compareTo(b.departureTime));
 
     return Scaffold(
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'driver_recurring',
-            onPressed: () => context.push('/create-series'),
-            child: const Icon(Icons.repeat),
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            heroTag: 'driver_newTrip',
-            onPressed: () => context.push('/create-trip'),
-            icon: const Icon(Icons.add),
-            label: const Text('New Trip'),
-          ),
-        ],
+      appBar: AppBar(
+        leading: const ShellMenuButton(),
+        title: Text('Driver Dashboard'),
+        centerTitle: true,
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'driver_newTrip',
+        onPressed: () => context.push('/create-trip'),
+        icon: const Icon(Icons.add),
+        label: const Text('New Trip'),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: RefreshIndicator(
@@ -216,114 +204,14 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: mapHeight,
-                width: double.infinity,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    GebetaMapWidget(
-                      key: _mapKey,
-                      initialCenter: _userLocation ??
-                          const LatLng(
-                            AppConstants.defaultLat,
-                            AppConstants.defaultLng,
-                          ),
-                      initialZoom: 13.4,
-                      showUserLocation: true,
-                      interactive: true,
-                      markers: _buildMarkers(_featuredTrip, _userLocation),
-                      polylines: _buildPolylines(_featuredTrip, _directionRoute),
-                      onTap: (_) {
-                        final id = _featuredTrip?.id;
-                        if (id != null && id.isNotEmpty) {
-                          context.push('/trip-detail/$id');
-                        }
-                      },
-                    ),
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.55),
-                              Colors.black.withValues(alpha: 0.08),
-                            ],
-                          ),
-                        ),
-                        child: SafeArea(
-                          bottom: false,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 2,
-                            ),
-                            child: Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.menu_rounded),
-                                  color: Colors.white,
-                                  onPressed: () =>
-                                      ShellDrawerScope.open(context),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    'Driver dashboard',
-                                    textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                  ),
-                                ),
-                                const SizedBox(width: 48),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 12,
-                      bottom: 88,
-                      child: FloatingActionButton.small(
-                        heroTag: 'driver_home_sos',
-                        backgroundColor: AppColors.sosRed,
-                        foregroundColor: Colors.white,
-                        onPressed: () {
-                          final id = _featuredTrip?.id;
-                          if (id != null) showEmergencyAlertFlow(context, id);
-                        },
-                        child: const Icon(Icons.emergency_rounded),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (_showBanner) ...[
-                      DriverGreetingBanner(
-                        title: greeting,
-                        subtitle: bannerSubtitle,
-                        onDismiss: () => setState(() => _showBanner = false),
-                      ),
-                      const SizedBox(height: 14),
-                    ],
+                   
                     if (_featuredTrip != null) ...[
                       DriverCurrentTripCard(
                         trip: _featuredTrip!,
@@ -367,72 +255,17 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                       ),
                       const SizedBox(height: 20),
                     ],
-                    Text(
-                      l10n.scheduledTrips,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
+                    _ScheduledTripsTabbedSection(
+                      title: l10n.scheduledTrips,
+                      now: now,
+                      loading: tripProvider.loading && trips.isEmpty,
+                      trips: scheduledTrips,
+                      onOpenTrip: (id) => context.push('/trip-detail/$id'),
                     ),
-                    const SizedBox(height: 10),
                   ],
                 ),
               ),
             ),
-            if (tripProvider.loading && trips.isEmpty)
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.only(top: 36),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-              )
-            else if (trips.isEmpty)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 32, 16, 120),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        Icon(Icons.route,
-                            size: 64, color: AppColors.textHintLight),
-                        const SizedBox(height: 14),
-                        Text(
-                          'No trips yet',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Create a trip to start earning and accepting ride requests.',
-                          textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textSecondaryLight,
-                                  ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final t = trips[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: DriverTripListCard(
-                          trip: t,
-                          l10n: l10n,
-                          onTap: () => context.push('/trip-detail/${t.id}'),
-                        ),
-                      );
-                    },
-                    childCount: trips.length,
-                  ),
-                ),
-              ),
           ],
         ),
       ),
@@ -440,47 +273,321 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
   }
 }
 
-List<MapMarker> _buildMarkers(TripModel? trip, LatLng? userLocation) {
-  final markers = <MapMarker>[];
-  if (trip != null && trip.routeCoordinates.isNotEmpty) {
-    markers.add(MapMarker(
-      position: LatLng(
-        trip.routeCoordinates.first.lat,
-        trip.routeCoordinates.first.lng,
-      ),
-    ));
-    if (trip.routeCoordinates.length >= 2) {
-      markers.add(MapMarker(
-        position: LatLng(
-          trip.routeCoordinates.last.lat,
-          trip.routeCoordinates.last.lng,
-        ),
-        iconSize: 1.8,
-      ));
-    }
+enum _ScheduleFilter { today, week, month, all }
+
+List<TripModel> _filterScheduledTrips(
+  List<TripModel> trips, {
+  required DateTime now,
+  required _ScheduleFilter filter,
+}) {
+  if (filter == _ScheduleFilter.all) return trips;
+
+  final todayStart = DateTime(now.year, now.month, now.day);
+  final todayEnd = todayStart.add(const Duration(days: 1));
+
+  bool inRange(DateTime d, DateTime start, DateTime end) =>
+      !d.isBefore(start) && d.isBefore(end);
+
+  switch (filter) {
+    case _ScheduleFilter.today:
+      return trips.where((t) => inRange(t.departureTime, todayStart, todayEnd)).toList();
+    case _ScheduleFilter.week:
+      final weekday = todayStart.weekday; // Mon=1..Sun=7
+      final weekStart = todayStart.subtract(Duration(days: weekday - 1));
+      final weekEnd = weekStart.add(const Duration(days: 7));
+      return trips.where((t) => inRange(t.departureTime, weekStart, weekEnd)).toList();
+    case _ScheduleFilter.month:
+      final monthStart = DateTime(now.year, now.month, 1);
+      final monthEnd =
+          (now.month == 12) ? DateTime(now.year + 1, 1, 1) : DateTime(now.year, now.month + 1, 1);
+      return trips.where((t) => inRange(t.departureTime, monthStart, monthEnd)).toList();
+    case _ScheduleFilter.all:
+      return trips;
   }
-  if (userLocation != null) {
-    markers.add(MapMarker(position: userLocation, iconSize: 1.4));
-  }
-  return markers;
 }
 
-List<MapPolyline> _buildPolylines(TripModel? trip, RouteResult? route) {
-  if (route != null && route.polylinePoints.length >= 2) {
-    final points = route.polylinePoints
-        .where((p) => p.length >= 2)
-        .map((p) => LatLng(p[0], p[1]))
-        .toList();
-    return [
-      MapPolyline(points: points, color: AppColors.primaryMapHex, width: 5),
-    ];
-  }
-  if (trip != null && trip.routeCoordinates.length >= 2) {
-    final points =
-        trip.routeCoordinates.map((c) => LatLng(c.lat, c.lng)).toList();
-    return [
-      MapPolyline(points: points, color: AppColors.primaryMapHex, width: 5),
-    ];
-  }
-  return [];
+class _ScheduledTripsTabbedSection extends StatefulWidget {
+  const _ScheduledTripsTabbedSection({
+    required this.title,
+    required this.now,
+    required this.loading,
+    required this.trips,
+    required this.onOpenTrip,
+  });
+
+  final String title;
+  final DateTime now;
+  final bool loading;
+  final List<TripModel> trips;
+  final ValueChanged<String> onOpenTrip;
+
+  @override
+  State<_ScheduledTripsTabbedSection> createState() =>
+      _ScheduledTripsTabbedSectionState();
 }
+
+class _ScheduledTripsTabbedSectionState extends State<_ScheduledTripsTabbedSection>
+    with SingleTickerProviderStateMixin {
+  late final TabController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    // Default selected tab: "All" (index 0).
+    _controller = TabController(length: 4, vsync: this, initialIndex: 0);
+    _controller.addListener(() {
+      if (!mounted) return;
+      // Rebuild when index changes (tap/animate).
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    final all = widget.trips;
+    final today = _filterScheduledTrips(
+      all,
+      now: widget.now,
+      filter: _ScheduleFilter.today,
+    );
+    final week = _filterScheduledTrips(
+      all,
+      now: widget.now,
+      filter: _ScheduleFilter.week,
+    );
+    final month = _filterScheduledTrips(
+      all,
+      now: widget.now,
+      filter: _ScheduleFilter.month,
+    );
+
+    // Order must match TabBar order: All, Today, This Week, This Month
+    final List<({List<TripModel> trips, String emptyTitle})> tabs = [
+      (trips: all, emptyTitle: 'No scheduled trips'),
+      (trips: today, emptyTitle: 'No trips scheduled for today'),
+      (trips: week, emptyTitle: 'No trips scheduled this week'),
+      (trips: month, emptyTitle: 'No trips scheduled this month'),
+    ];
+
+    final active = tabs[_controller.index];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Text(
+              widget.title,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            _CountBadge(count: widget.trips.length),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TabBar(
+          
+          controller: _controller,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          dividerHeight: 1,
+          dividerColor: Theme.of(context).colorScheme.onSurface.withAlpha(20),
+          indicatorWeight: 1,
+          // Compact, professional spacing (no huge gaps).
+          labelPadding: const EdgeInsets.only(right: 1),
+          padding: EdgeInsets.zero,
+          indicatorPadding: EdgeInsets.zero,
+          indicatorColor: Theme.of(context).colorScheme.primary,
+          overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+          // indicator: BoxDecoration(
+          //   color: const Color.fromARGB(255, 154, 197, 204),
+          //   borderRadius: BorderRadius.circular(50),
+          // ),
+          labelColor: Theme.of(context).colorScheme.primary,
+          unselectedLabelColor: scheme.onSurfaceVariant.withValues(alpha: 0.9),
+          labelStyle:
+              theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+          unselectedLabelStyle:
+              theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w500),
+          tabs: [
+            _CompactPillTab(label: 'All', count: all.length),
+            _CompactPillTab(label: 'Today', count: today.length),
+            _CompactPillTab(label: 'This Week', count: week.length),
+            _CompactPillTab(label: 'This Month', count: month.length),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (widget.loading)
+          const Padding(
+            padding: EdgeInsets.only(top: 10, bottom: 6),
+            child: Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          )
+        else
+          _TripsTabBody(
+            l10n: l10n,
+            trips: active.trips,
+            emptyTitle: active.emptyTitle,
+            onOpenTrip: widget.onOpenTrip,
+          ),
+      ],
+    );
+  }
+}
+
+class _CompactPillTab extends StatelessWidget {
+  const _CompactPillTab({required this.label, required this.count});
+
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tab(
+      height: 38,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label),
+            const SizedBox(width: 6),
+            Text(
+              '($count)',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TripsTabBody extends StatelessWidget {
+  const _TripsTabBody({
+    required this.l10n,
+    required this.trips,
+    required this.emptyTitle,
+    required this.onOpenTrip,
+  });
+
+  final AppLocalizations l10n;
+  final List<TripModel> trips;
+  final String emptyTitle;
+  final ValueChanged<String> onOpenTrip;
+
+  @override
+  Widget build(BuildContext context) {
+    if (trips.isEmpty) {
+      return _ScheduledEmptyState(title: emptyTitle);
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: trips.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final t = trips[index];
+        return DriverTripListCard(
+          trip: t,
+          l10n: l10n,
+          onTap: () => onOpenTrip(t.id),
+        );
+      },
+    );
+  }
+}
+
+class _ScheduledEmptyState extends StatelessWidget {
+  const _ScheduledEmptyState({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      decoration: BoxDecoration(
+        color: scheme.surface.withValues(alpha: theme.brightness == Brightness.dark ? 0.25 : 0.55),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primary.withValues(alpha: 0.12),
+            ),
+            child: const Icon(Icons.event_note_rounded, color: AppColors.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Create a trip to start receiving booking requests.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CountBadge extends StatelessWidget {
+  const _CountBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.22)),
+      ),
+      child: Text(
+        '$count',
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: AppColors.primary,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+// Note: Map helpers removed (this screen currently doesn't render a map).

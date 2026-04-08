@@ -1,11 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
-
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/enums.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../trip/models/trip_model.dart';
+
+
+// Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+            
+//             Icon(Icons.circle, size: 10, color: Colors.green),
+//               Container(width: 2, height: 30, color: Colors.grey.shade400),
+//               Icon(Icons.location_on, size: 16, color: Colors.red),
+//             ],
+//                     ),
+//           )
 
 class DriverTripListCard extends StatelessWidget {
   final TripModel trip;
@@ -34,70 +46,60 @@ class DriverTripListCard extends StatelessWidget {
       onTap: onTap,
       padding: const EdgeInsets.all(16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '${trip.origin} → ${trip.destination}',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Icon(Icons.schedule, size: 16, color: AppColors.textSecondaryLight),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  timeFmt.format(trip.departureTime),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondaryLight,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              _MetaChip(
-                icon: Icons.event_seat_outlined,
-                text: '${trip.seatsLeft} ${l10n.seats}',
-              ),
-              const SizedBox(width: 8),
-              _MetaChip(
-                icon: Icons.payments_outlined,
-                text:
-                    '${trip.pricePerSeat.toStringAsFixed(0)} ${l10n.etb}${l10n.perSeat}',
-              ),
-            ],
-          ),
-        ],
-      ),
+         crossAxisAlignment: CrossAxisAlignment.start,
+         children: [
+           Text(
+             trip.origin,
+             style: GoogleFonts.poppins(
+               fontWeight: FontWeight.w600,
+             ),
+             maxLines: 2,
+             overflow: TextOverflow.ellipsis,
+           ),
+           const SizedBox(height: 20),
+
+           Text(
+             trip.destination,
+             style: GoogleFonts.poppins(
+               fontWeight: FontWeight.w600,
+             ),
+             maxLines: 2,
+             overflow: TextOverflow.ellipsis,
+           ),
+
+           SizedBox(height: 10,),
+           Row(
+             children: [
+               Icon(Icons.schedule, size: 16, color: AppColors.textSecondaryLight),
+               const SizedBox(width: 6),
+               Expanded(
+                 child: Text(
+                   timeFmt.format(trip.departureTime),
+                   style: GoogleFonts.aBeeZee(
+                     fontWeight: FontWeight.w400,
+                   ),
+                 ),
+               ),
+             ],
+           ),
+           const SizedBox(height: 10),
+           Row(
+             children: [
+               _MetaChip(
+                 icon: Icons.event_seat_outlined,
+                 text: '${trip.seatsLeft} ${l10n.seats}',
+               ),
+               const SizedBox(width: 8),
+               _MetaChip(
+                 icon: Icons.payments_outlined,
+                 text:
+                     '${trip.pricePerSeat.toStringAsFixed(0)} ${l10n.etb}${l10n.perSeat}',
+                     
+               ),
+             ],
+           ),
+         ],
+       ),
     );
   }
 }
@@ -124,8 +126,8 @@ class _MetaChip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             text,
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+            style: GoogleFonts.aBeeZee(
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

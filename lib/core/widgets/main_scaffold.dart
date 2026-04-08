@@ -165,7 +165,6 @@ class _MainScaffoldState extends State<MainScaffold> {
     final authProvider = context.watch<AuthProvider>();
     final notificationProvider = context.watch<NotificationProvider>();
     final isDriver = authProvider.isDriver;
-    int currentIdx = 0;
     final unread = notificationProvider.unreadCount;
     final scheme = Theme.of(context).colorScheme;
     final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -173,6 +172,34 @@ class _MainScaffoldState extends State<MainScaffold> {
           fontSize: 11,
           letterSpacing: 0.2,
         );
+
+    final location = GoRouterState.of(context).uri.toString();
+    int currentIdx = 0;
+    if (isDriver) {
+      if (location.startsWith('/driver-active')) {
+        currentIdx = 1;
+      } else if (location.startsWith('/chat-list')) {
+        currentIdx = 2;
+      } else if (location.startsWith('/notifications')) {
+        currentIdx = 3;
+      } else if (location.startsWith('/profile')) {
+        currentIdx = 4;
+      } else {
+        currentIdx = 0;
+      }
+    } else {
+      if (location.startsWith('/chat-list')) {
+        currentIdx = 1;
+      } else if (location.startsWith('/passenger-bookings')) {
+        currentIdx = 2;
+      } else if (location.startsWith('/search')) {
+        currentIdx = 3;
+      } else if (location.startsWith('/profile')) {
+        currentIdx = 4;
+      } else {
+        currentIdx = 0;
+      }
+    }
 
     void onPassengerTab(int index) {
       switch (index) {
@@ -203,12 +230,15 @@ class _MainScaffoldState extends State<MainScaffold> {
           context.go('/driver');
           break;
         case 1:
-          context.go('/chat-list');
+          context.go('/driver-active');
           break;
         case 2:
-          context.go('/notifications');
+          context.go('/chat-list');
           break;
         case 3:
+          context.go('/notifications');
+          break;
+        case 4:
           context.go('/profile');
           break;
       }
@@ -223,6 +253,12 @@ class _MainScaffoldState extends State<MainScaffold> {
               label: 'Home',
               labelStyle: labelStyle,
               child: const Icon(Icons.home_rounded,
+                  color: AppColors.primary, size: 26),
+            ),
+            CurvedNavigationBarItem(
+              label: 'Active',
+              labelStyle: labelStyle,
+              child: const Icon(Icons.directions,
                   color: AppColors.primary, size: 26),
             ),
             CurvedNavigationBarItem(

@@ -9,6 +9,7 @@ import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/driver_setup_screen.dart';
 import '../../features/passenger/home/screens/passenger_home_screen.dart';
 import '../../features/driver/home/screens/driver_home_screen.dart';
+import '../../features/driver/home/screens/driver_active_screen.dart';
 import '../../features/passenger/search/screens/search_screen.dart';
 import '../../features/passenger/search/screens/search_results_screen.dart';
 import '../../features/passenger/search/screens/driver_detail_screen.dart';
@@ -109,6 +110,10 @@ class AppRouter {
             GoRoute(
               path: '/driver',
               builder: (context, state) => const DriverHomeScreen(),
+            ),
+            GoRoute(
+              path: '/driver-active',
+              builder: (context, state) => const DriverActiveScreen(),
             ),
             GoRoute(
               path: '/chat-list',
