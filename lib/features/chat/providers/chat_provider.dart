@@ -37,11 +37,13 @@ class ChatConversation {
       lastMessage: json['lastMessage'] as String?,
       unreadCount: json['unreadCount'] as int? ?? 0,
       lastMessageAt: json['lastMessageAt'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(json['lastMessageAt'] as int)
+          ? DateTime.fromMillisecondsSinceEpoch(
+              (json['lastMessageAt'] as num).toInt(),
+            )
           : null,
       displayName: json['displayName'] as String? ??
           json['name'] as String? ??
-          '',
+          'Trip chat',
     );
   }
 
@@ -108,35 +110,6 @@ class ChatProvider extends ChangeNotifier {
   bool get loadingMessages => _loadingMessages;
   String? get error => _error;
 
-  static final _mockConversations = [
-    const ChatConversation(
-      id: 'conv1',
-      displayName: 'Abebe Kebede',
-      lastMessage: "I'm 5 minutes away",
-    ),
-    const ChatConversation(
-      id: 'conv2',
-      displayName: 'Tigist Hailu',
-      lastMessage: 'Thanks for the ride!',
-    ),
-    const ChatConversation(
-      id: 'conv3',
-      displayName: 'Dawit Alemu',
-      lastMessage: 'See you at the pickup point',
-    ),
-  ];
-
-  static final _mockMessages = [
-    const ChatMessage(id: 'm1', text: "Hi! I'm on my way", isSent: false),
-    const ChatMessage(
-        id: 'm2',
-        text: "Great, I'll be at the pickup point",
-        isSent: true),
-    const ChatMessage(id: 'm3', text: "I'm 5 minutes away", isSent: false),
-    const ChatMessage(
-        id: 'm4', text: 'Perfect, see you soon!', isSent: true),
-  ];
-
   ChatProvider(this._convex, this._currentUserId);
 
   void setUserId(String userId) {
@@ -151,7 +124,8 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
 
     if (_convex == null) {
-      _conversations = _mockConversations;
+      _conversations = [];
+      _error = 'Chat service is not configured for this build.';
       _loadingConversations = false;
       notifyListeners();
       return;
@@ -171,21 +145,24 @@ class ChatProvider extends ChangeNotifier {
                 .toList();
           } catch (e) {
             debugPrint('Conversation parse error: $e');
-            _conversations = _mockConversations;
+            _conversations = [];
+            _error = 'Failed to parse conversations.';
           }
           _loadingConversations = false;
           notifyListeners();
         },
         onError: (message, value) {
           debugPrint('Conversations error: $message');
-          _conversations = _mockConversations;
+          _conversations = [];
+          _error = message;
           _loadingConversations = false;
           notifyListeners();
         },
       );
     } catch (e) {
       debugPrint('Failed to subscribe to conversations: $e');
-      _conversations = _mockConversations;
+      _conversations = [];
+      _error = 'Failed to connect to chat conversations.';
       _loadingConversations = false;
       notifyListeners();
     }
@@ -198,7 +175,8 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
 
     if (_convex == null) {
-      _messages = _mockMessages;
+      _messages = [];
+      _error = 'Chat service is not configured for this build.';
       _loadingMessages = false;
       notifyListeners();
       return;
@@ -218,21 +196,25 @@ class ChatProvider extends ChangeNotifier {
                 .toList();
           } catch (e) {
             debugPrint('Messages parse error: $e');
-            _messages = _mockMessages;
+            _messages = [];
+            _error = 'Failed to parse messages.';
           }
           _loadingMessages = false;
+          markAsRead(conversationId);
           notifyListeners();
         },
         onError: (message, value) {
           debugPrint('Messages error: $message');
-          _messages = _mockMessages;
+          _messages = [];
+          _error = message;
           _loadingMessages = false;
           notifyListeners();
         },
       );
     } catch (e) {
       debugPrint('Failed to subscribe to messages: $e');
-      _messages = _mockMessages;
+      _messages = [];
+      _error = 'Failed to connect to conversation.';
       _loadingMessages = false;
       notifyListeners();
     }
@@ -273,6 +255,23 @@ class ChatProvider extends ChangeNotifier {
       );
     } catch (e) {
       debugPrint('Failed to mark messages as read: $e');
+    }
+  }
+
+  Future<String?> getConversationIdByBooking(String bookingId) async {
+    if (_convex == null || bookingId.trim().isEmpty) return null;
+    try {
+      final value = await _convex.query(
+        ConvexFunctions.getConversationByBooking,
+        {'bookingId': bookingId},
+      );
+      if (value.trim().isEmpty || value == 'null') return null;
+      final decoded = jsonDecode(value);
+      if (decoded is Map) return decoded['_id']?.toString();
+      return null;
+    } catch (e) {
+      debugPrint('Failed to resolve conversation by booking: $e');
+      return null;
     }
   }
 

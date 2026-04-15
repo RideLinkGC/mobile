@@ -120,6 +120,10 @@ class AppRouter {
               builder: (context, state) => const ChatListScreen(),
             ),
             GoRoute(
+              path: '/chat',
+              builder: (context, state) => const ChatListScreen(),
+            ),
+            GoRoute(
               path: '/passenger-bookings',
               builder: (context, state) => const PassengerBookingsScreen(),
             ),

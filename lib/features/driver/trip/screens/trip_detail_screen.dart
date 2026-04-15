@@ -12,6 +12,8 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import 'package:gebeta_gl/gebeta_gl.dart';
 import '../../../../core/widgets/gebeta_map_widget.dart';
+import '../../../auth/providers/auth_provider.dart';
+import '../../../chat/providers/chat_provider.dart';
 import '../../../passenger/booking/models/booking_model.dart';
 import '../providers/trip_provider.dart';
 
@@ -140,6 +142,27 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _openChatForBooking(BookingModel booking) async {
+    final auth = context.read<AuthProvider>();
+    final chatProvider = context.read<ChatProvider>();
+    await auth.syncConvexAuth();
+    final userId = auth.user?.id;
+    if (userId != null && userId.isNotEmpty) {
+      chatProvider.setUserId(userId);
+    }
+    final conversationId = await chatProvider.getConversationIdByBooking(booking.id);
+    if (!mounted) return;
+    if (conversationId != null && conversationId.isNotEmpty) {
+      context.push('/chat/$conversationId');
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Chat will be available once the request is accepted.'),
+      ),
+    );
   }
 
   @override
@@ -425,6 +448,11 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                                 ),
                               ],
                             ),
+                          ),
+                          IconButton(
+                            onPressed: () => _openChatForBooking(booking),
+                            icon: const Icon(Icons.chat_bubble_outline),
+                            tooltip: 'Chat',
                           ),
                         ],
                       ),
