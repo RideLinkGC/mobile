@@ -909,6 +909,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not send alert. Try again or call emergency services.'**
   String get emergencySendFailed;
+
+  /// No description provided for @profileNamePhoneRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Name and phone number are required'**
+  String get profileNamePhoneRequired;
+
+  /// No description provided for @profileUpdatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile updated successfully'**
+  String get profileUpdatedSuccessfully;
+
+  /// No description provided for @profileActivityAccountCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created'**
+  String get profileActivityAccountCreated;
+
+  /// No description provided for @profileActivityDriverConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver profile configured'**
+  String get profileActivityDriverConfigured;
+
+  /// No description provided for @profileActivityPassengerActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Passenger profile active'**
+  String get profileActivityPassengerActive;
+
+  /// No description provided for @profileActivityVehicleDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle details available'**
+  String get profileActivityVehicleDetails;
+
+  /// No description provided for @profileActivityReadyToBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to book rides'**
+  String get profileActivityReadyToBook;
+
+  /// No description provided for @profileActivityIdentityVerification.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity verification'**
+  String get profileActivityIdentityVerification;
+
+  /// No description provided for @profileStatusGoodStanding.
+  ///
+  /// In en, this message translates to:
+  /// **'In good standing'**
+  String get profileStatusGoodStanding;
+
+  /// No description provided for @profileStatusPendingVerificationDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending verification details'**
+  String get profileStatusPendingVerificationDetails;
+
+  /// No description provided for @profileActivityManageAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage alerts from your account menu'**
+  String get profileActivityManageAlerts;
+
+  /// No description provided for @profilePersonalDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal details'**
+  String get profilePersonalDetailsTitle;
+
+  /// No description provided for @profilePersonalDetailsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account information used for bookings and safety.'**
+  String get profilePersonalDetailsSubtitle;
+
+  /// No description provided for @profileDriverDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver details'**
+  String get profileDriverDetailsTitle;
+
+  /// No description provided for @profileDriverDetailsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle details visible to passengers while booking.'**
+  String get profileDriverDetailsSubtitle;
+
+  /// No description provided for @profileQuickActionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick actions'**
+  String get profileQuickActionsTitle;
+
+  /// No description provided for @profileQuickActionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequently used account actions and preferences.'**
+  String get profileQuickActionsSubtitle;
+
+  /// No description provided for @profileRecentActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent activity'**
+  String get profileRecentActivityTitle;
+
+  /// No description provided for @profileRecentActivitySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A quick overview of your latest account events.'**
+  String get profileRecentActivitySubtitle;
+
+  /// No description provided for @profileNoActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity yet'**
+  String get profileNoActivityTitle;
+
+  /// No description provided for @profileNoActivityMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Once you book rides or update your profile, updates will appear here.'**
+  String get profileNoActivityMessage;
+
+  /// No description provided for @profileCompletionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile completion'**
+  String get profileCompletionLabel;
+
+  /// No description provided for @profileRoleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get profileRoleLabel;
+
+  /// No description provided for @profileStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get profileStatusLabel;
+
+  /// No description provided for @profileStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get profileStatusActive;
+
+  /// No description provided for @profileStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get profileStatusPending;
+
+  /// No description provided for @profileNotProvided.
+  ///
+  /// In en, this message translates to:
+  /// **'Not provided'**
+  String get profileNotProvided;
+
+  /// No description provided for @profileEditSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your personal details and ride identity information.'**
+  String get profileEditSubtitle;
+
+  /// No description provided for @profilePhotoUploadPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo upload preview'**
+  String get profilePhotoUploadPreview;
+
+  /// No description provided for @profilePhotoSyncingNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo syncing will be enabled in the next API update.'**
+  String get profilePhotoSyncingNote;
+
+  /// No description provided for @profileBasicInformationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic information'**
+  String get profileBasicInformationTitle;
+
+  /// No description provided for @profileBasicInformationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This information appears to riders and admins.'**
+  String get profileBasicInformationSubtitle;
+
+  /// No description provided for @profileVehicleInformationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle information'**
+  String get profileVehicleInformationTitle;
+
+  /// No description provided for @profileVehicleInformationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep these details current so passengers can trust your listing.'**
+  String get profileVehicleInformationSubtitle;
+
+  /// No description provided for @profileSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving...'**
+  String get profileSaving;
+
+  /// No description provided for @profileUserLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get profileUserLabel;
 }
 
 class _AppLocalizationsDelegate

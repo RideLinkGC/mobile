@@ -35,6 +35,7 @@ import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/emergency/screens/sos_screen.dart';
 import '../../features/feedback/screens/rating_screen.dart';
 import '../../features/feedback/screens/report_screen.dart';
+import '../../features/admin/screens/admin_document_review_screen.dart';
 import '../widgets/main_scaffold.dart';
 
 class AppRouter {
@@ -252,6 +253,10 @@ class AppRouter {
           builder: (context, state) => ReportScreen(
             targetId: state.pathParameters['targetId']!,
           ),
+        ),
+        GoRoute(
+          path: '/admin/documents',
+          builder: (context, state) => const AdminDocumentReviewScreen(),
         ),
       ],
     );

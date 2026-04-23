@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/enums.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_card.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../providers/payment_provider.dart';
 
 class PaymentHistoryScreen extends StatefulWidget {
@@ -22,7 +23,10 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<PaymentProvider>().loadPaymentHistory();
+      final userId = context.read<AuthProvider>().user?.id;
+      if (userId != null && userId.isNotEmpty) {
+        context.read<PaymentProvider>().loadPaymentHistory(userId);
+      }
     });
   }
 

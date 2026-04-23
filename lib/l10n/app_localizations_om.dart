@@ -428,4 +428,126 @@ class AppLocalizationsOm extends AppLocalizations {
   @override
   String get emergencySendFailed =>
       'Erguu hin dandeenye. Irra deebi\'ii yookiin tajaajila balaa bilbilaa.';
+
+  @override
+  String get profileNamePhoneRequired =>
+      'Maqaa fi lakkoofsa bilbilaa guutuun dirqama';
+
+  @override
+  String get profileUpdatedSuccessfully =>
+      'Seenaa fayyadamaa milkaa\'inaan haaromfameera';
+
+  @override
+  String get profileActivityAccountCreated => 'Herregni uumameera';
+
+  @override
+  String get profileActivityDriverConfigured =>
+      'Seenaa konkolaachisaa qindaa\'eera';
+
+  @override
+  String get profileActivityPassengerActive => 'Seenaa imaltuu hojii irra jira';
+
+  @override
+  String get profileActivityVehicleDetails => 'Odeeffannoon konkolaataa jira';
+
+  @override
+  String get profileActivityReadyToBook => 'Imala qabachuuf qophaa\'eera';
+
+  @override
+  String get profileActivityIdentityVerification => 'Mirkaneessa eenyummaa';
+
+  @override
+  String get profileStatusGoodStanding => 'Haala gaarii keessa jira';
+
+  @override
+  String get profileStatusPendingVerificationDetails =>
+      'Bal\'inaan mirkaneessaa eegaa jira';
+
+  @override
+  String get profileActivityManageAlerts =>
+      'Akeekkachiisota keessaa menu herregaa keetiin bulchi';
+
+  @override
+  String get profilePersonalDetailsTitle => 'Bal\'ina dhuunfaa';
+
+  @override
+  String get profilePersonalDetailsSubtitle =>
+      'Odeeffannoo herregaa kee kan qabuu, nageenyaa fi qabduu teessoo irratti fayyadamu.';
+
+  @override
+  String get profileDriverDetailsTitle => 'Bal\'ina konkolaachisaa';
+
+  @override
+  String get profileDriverDetailsSubtitle =>
+      'Odeeffannoo konkolaataa yeroo imaltoonni qabatan mul\'atu.';
+
+  @override
+  String get profileQuickActionsTitle => 'Gocha ariifachiisaa';
+
+  @override
+  String get profileQuickActionsSubtitle =>
+      'Gochoota fi filannoowwan herregaa yeroo baayyee itti fayyadamtan.';
+
+  @override
+  String get profileRecentActivityTitle => 'Sochii dhihoo';
+
+  @override
+  String get profileRecentActivitySubtitle =>
+      'Mul\'ata gabaabaa sochii herregaa kee dhiyoo.';
+
+  @override
+  String get profileNoActivityTitle => 'Ammaaf sochiin hin jiru';
+
+  @override
+  String get profileNoActivityMessage =>
+      'Yeroo imala qabattu ykn seenaa kee haaromsitu, haaromsi asitti mul\'ata.';
+
+  @override
+  String get profileCompletionLabel => 'Guutinsa seenaa';
+
+  @override
+  String get profileRoleLabel => 'Gahee';
+
+  @override
+  String get profileStatusLabel => 'Haala';
+
+  @override
+  String get profileStatusActive => 'Hojii irra';
+
+  @override
+  String get profileStatusPending => 'Eegaa jira';
+
+  @override
+  String get profileNotProvided => 'Hin kennamne';
+
+  @override
+  String get profileEditSubtitle =>
+      'Bal\'ina dhuunfaa fi odeeffannoo eenyummaa imalaa kee haaromsi.';
+
+  @override
+  String get profilePhotoUploadPreview => 'Durargii olkaa\'uu suuraa';
+
+  @override
+  String get profilePhotoSyncingNote =>
+      'Walqindaa\'inni suuraa haaromsa API itti aanu keessatti ni dabalama.';
+
+  @override
+  String get profileBasicInformationTitle => 'Odeeffannoo bu\'uuraa';
+
+  @override
+  String get profileBasicInformationSubtitle =>
+      'Odeeffannoon kun imaltootaa fi bulchitootatti ni mul\'ata.';
+
+  @override
+  String get profileVehicleInformationTitle => 'Odeeffannoo konkolaataa';
+
+  @override
+  String get profileVehicleInformationSubtitle =>
+      'Imaltoonni akka amananiif bal\'ina kana yeroo yeroon haaromsi.';
+
+  @override
+  String get profileSaving => 'Olkaa\'aa jira...';
+
+  @override
+  String get profileUserLabel => 'Fayyadamaa';
 }

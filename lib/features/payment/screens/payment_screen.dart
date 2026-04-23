@@ -249,7 +249,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
     if (!mounted) return;
 
     if (result.result == ChapaPaymentResult.success) {
-      setState(() => _showSuccess = true);
+      final status = await paymentProvider.getBookingPaymentStatus(widget.bookingId);
+      if (!mounted) return;
+      final paid = status?['paid'] == true;
+      if (paid) {
+        setState(() => _showSuccess = true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment submitted. Waiting for verification.'),
+          ),
+        );
+      }
     } else if (result.result == ChapaPaymentResult.failed) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

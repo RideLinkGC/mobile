@@ -28,6 +28,48 @@ class AuthProvider extends ChangeNotifier {
   bool get isDriver => _user?.role == UserRole.driver;
   bool get isPassenger => _user?.role == UserRole.passenger;
 
+  Future<bool> requestSignInOtp(String email) async {
+    try {
+      _state = AuthState.loading;
+      _errorMessage = null;
+      notifyListeners();
+      await _apiClient.post(
+        ApiEndpoints.sendVerificationOtp,
+        data: {'email': email, 'type': 'email-verification'},
+      );
+      _state = AuthState.unauthenticated;
+      notifyListeners();
+      return true;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _state = AuthState.error;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> verifyOtpAndLogin({
+    required String email,
+    required String otp,
+    required String password,
+  }) async {
+    try {
+      _state = AuthState.loading;
+      _errorMessage = null;
+      notifyListeners();
+      await _apiClient.post(
+        ApiEndpoints.verifyEmailOtp,
+        data: {'email': email, 'otp': otp},
+      );
+      return await login(email, password);
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _state = AuthState.error;
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Check if we have a valid session (stored token).
   Future<void> checkAuthStatus() async {
     final token = await _storage.getAccessToken();
@@ -189,6 +231,72 @@ class AuthProvider extends ChangeNotifier {
       if (role != UserRole.driver) {
         await _syncConvexAuth();
       }
+      notifyListeners();
+      return true;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _state = AuthState.error;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> verifyRegistrationOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      _state = AuthState.loading;
+      _errorMessage = null;
+      notifyListeners();
+      await _apiClient.post(
+        ApiEndpoints.verifyEmailOtp,
+        data: {'email': email, 'otp': otp},
+      );
+      await checkAuthStatus();
+      return _state == AuthState.authenticated;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _state = AuthState.error;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> requestPasswordResetOtp(String email) async {
+    try {
+      _state = AuthState.loading;
+      _errorMessage = null;
+      notifyListeners();
+      await _apiClient.post(
+        ApiEndpoints.requestPasswordResetOtp,
+        data: {'email': email},
+      );
+      _state = AuthState.unauthenticated;
+      notifyListeners();
+      return true;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _state = AuthState.error;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> resetPasswordWithOtp({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    try {
+      _state = AuthState.loading;
+      _errorMessage = null;
+      notifyListeners();
+      await _apiClient.post(
+        ApiEndpoints.resetPasswordOtp,
+        data: {'email': email, 'otp': otp, 'password': newPassword},
+      );
+      _state = AuthState.unauthenticated;
       notifyListeners();
       return true;
     } on ApiException catch (e) {

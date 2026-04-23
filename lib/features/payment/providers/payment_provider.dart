@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/enums.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_endpoints.dart';
+import '../../../core/network/api_exceptions.dart';
 import '../../../core/services/chapa_service.dart';
 
 class PaymentRecord {
@@ -68,49 +70,52 @@ class PaymentProvider extends ChangeNotifier {
   List<PaymentRecord> get pendingPayments =>
       _payments.where((p) => p.status == PaymentStatus.pending).toList();
 
-  static final _mockPayments = [
-    const PaymentRecord(
-      id: 'p1',
-      description: 'Bole → Megenagna',
-      amount: 45,
-      date: '2025-02-28',
-      status: PaymentStatus.completed,
-      txRef: 'ridelink-abc123',
-    ),
-    const PaymentRecord(
-      id: 'p2',
-      description: 'Kazanchis → CMC',
-      amount: 35,
-      date: '2025-02-27',
-      status: PaymentStatus.completed,
-      txRef: 'ridelink-def456',
-    ),
-    const PaymentRecord(
-      id: 'p3',
-      description: 'Piassa → Bole',
-      amount: 50,
-      date: '2025-02-26',
-      status: PaymentStatus.pending,
-      txRef: 'ridelink-ghi789',
-    ),
-  ];
-
   PaymentProvider(this._chapaService, this._apiClient);
 
-  /// No backend payment history endpoint exists yet; use mock data.
-  Future<void> loadPaymentHistory() async {
+  Future<void> loadPaymentHistory(String userId) async {
     _loading = true;
     _error = null;
     notifyListeners();
 
-    // Keep ApiClient wired for future history endpoint.
-    // (Reading it here avoids analyzer "unused_field" while keeping DI stable.)
-    _apiClient.toString();
-
-    _payments = _mockPayments;
+    try {
+      final response = await _apiClient.get(ApiEndpoints.paymentsHistory(userId));
+      final data = response.data;
+      final items = (data is Map<String, dynamic> ? data['items'] : null) as List?;
+      _payments = (items ?? const [])
+          .map((e) => PaymentRecord.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on ApiException catch (e) {
+      _error = e.message;
+      _payments = [];
+    } catch (e) {
+      _error = 'Failed to load payment history';
+      _payments = [];
+    }
 
     _loading = false;
     notifyListeners();
+  }
+
+  Future<Map<String, dynamic>?> getBookingPaymentStatus(String bookingId) async {
+    try {
+      final response =
+          await _apiClient.get(ApiEndpoints.paymentStatusByBooking(bookingId));
+      return response.data as Map<String, dynamic>?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> verifyPayment(String txRef) async {
+    try {
+      await _apiClient.post(
+        ApiEndpoints.paymentsVerify,
+        data: {'txRef': txRef},
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<ChapaPaymentResponse> payForTrip({
@@ -126,11 +131,40 @@ class PaymentProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
-    final txRef = _chapaService.generateTxRef();
+    Map<String, dynamic>? checkout;
+    try {
+      final initResp = await _apiClient.post(
+        ApiEndpoints.paymentsInitiate,
+        data: {'bookingId': bookingId},
+      );
+      checkout = (initResp.data as Map<String, dynamic>?)?['checkout']
+          as Map<String, dynamic>?;
+      if (checkout == null) {
+        _processing = false;
+        _error = 'Failed to initiate payment';
+        notifyListeners();
+        return const ChapaPaymentResponse(
+          result: ChapaPaymentResult.failed,
+          message: 'Failed to initiate payment',
+        );
+      }
+    } on ApiException catch (e) {
+      _processing = false;
+      _error = e.message;
+      notifyListeners();
+      return ChapaPaymentResponse(
+        result: ChapaPaymentResult.failed,
+        message: e.message,
+      );
+    }
+
+    final txRef = checkout['txRef']?.toString() ?? _chapaService.generateTxRef();
+    final checkoutAmount = checkout['amount']?.toString() ?? amount;
 
     final result = await _chapaService.initiatePayment(
+      // ignore: use_build_context_synchronously
       context: context,
-      amount: amount,
+      amount: checkoutAmount,
       email: email,
       phone: phone,
       firstName: firstName,
@@ -139,6 +173,11 @@ class PaymentProvider extends ChangeNotifier {
       title: 'Trip Payment',
       description: 'Payment for booking $bookingId',
     );
+
+    if (result.result == ChapaPaymentResult.success && result.txRef != null) {
+      await verifyPayment(result.txRef!);
+      await getBookingPaymentStatus(bookingId);
+    }
 
     _lastPaymentResult = result;
     _processing = false;
@@ -157,28 +196,10 @@ class PaymentProvider extends ChangeNotifier {
     required String firstName,
     required String lastName,
   }) async {
-    _processing = true;
-    _error = null;
-    notifyListeners();
-
-    final txRef = _chapaService.generateTxRef();
-
-    final result = await _chapaService.initiatePayment(
-      context: context,
-      amount: amount,
-      email: email,
-      phone: phone,
-      firstName: firstName,
-      lastName: lastName,
-      txRef: txRef,
-      title: '$plan Subscription',
-      description: '$plan subscription for trip $tripId',
+    return const ChapaPaymentResponse(
+      result: ChapaPaymentResult.failed,
+      message:
+          'Subscriptions are not yet migrated to backend-initiated payment flow.',
     );
-
-    _lastPaymentResult = result;
-    _processing = false;
-    notifyListeners();
-
-    return result;
   }
 }

@@ -59,7 +59,8 @@ class _MainScaffoldState extends State<MainScaffold> {
   Widget _accountMenuDrawer(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
-    final iconColor =  scheme.primary;
+    final iconColor = scheme.primary;
+    final isAdmin = context.read<AuthProvider>().user?.role.name == 'admin';
 
     void closeDrawer() => Navigator.of(context).pop();
 
@@ -100,10 +101,19 @@ class _MainScaffoldState extends State<MainScaffold> {
               leading: Icon(
                 Icons.history,
                 color: iconColor,
-               ),
+              ),
               title: Text(l10n.paymentHistory),
               onTap: () => afterClose(() => context.push('/payment-history')),
             ),
+            if (isAdmin)
+              ListTile(
+                leading: Icon(
+                  Icons.admin_panel_settings_outlined,
+                  color: iconColor,
+                ),
+                title: const Text('Review documents'),
+                onTap: () => afterClose(() => context.push('/admin/documents')),
+              ),
             ListTile(
               leading:  Icon(
                 Icons.language_outlined,

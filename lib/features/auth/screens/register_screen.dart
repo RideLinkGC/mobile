@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -23,9 +25,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _otpController = TextEditingController();
   bool _obscurePassword = true;
   UserRole _selectedRole = UserRole.passenger;
   int _currentStep = 0;
+  bool _awaitingOtpVerification = false;
+  int _otpResendSeconds = 0;
+  Timer? _otpResendTimer;
 
   @override
   void dispose() {
@@ -33,20 +39,74 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
+    _otpController.dispose();
+    _otpResendTimer?.cancel();
     super.dispose();
+  }
+
+  void _startOtpResendCountdown() {
+    _otpResendTimer?.cancel();
+    setState(() => _otpResendSeconds = 45);
+    _otpResendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_otpResendSeconds <= 1) {
+        timer.cancel();
+        setState(() => _otpResendSeconds = 0);
+        return;
+      }
+      setState(() => _otpResendSeconds -= 1);
+    });
+  }
+
+  Future<void> _resendRegistrationOtp() async {
+    if (_otpResendSeconds > 0) return;
+    final email = _emailController.text.trim();
+    if (email.isEmpty) return;
+    final authProvider = context.read<AuthProvider>();
+    final sent = await authProvider.requestSignInOtp(email);
+    if (!mounted) return;
+    if (sent) {
+      _startOtpResendCountdown();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('OTP resent to your email.')),
+      );
+    }
   }
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.register(
-      name: _nameController.text.trim(),
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-      phone: _phoneController.text.trim(),
-      role: _selectedRole,
-    );
+    final email = _emailController.text.trim();
+    bool success;
+    if (_awaitingOtpVerification) {
+      success = await authProvider.verifyRegistrationOtp(
+        email: email,
+        otp: _otpController.text.trim(),
+      );
+    } else {
+      success = await authProvider.register(
+        name: _nameController.text.trim(),
+        email: email,
+        password: _passwordController.text,
+        phone: _phoneController.text.trim(),
+        role: _selectedRole,
+      );
+      if (success && mounted) {
+        setState(() => _awaitingOtpVerification = true);
+        _startOtpResendCountdown();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created. Enter OTP sent to your email.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+      return;
+    }
 
     if (!mounted) return;
 
@@ -100,6 +160,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onStepContinue: () {
                       if (_currentStep == 0) {
                         setState(() => _currentStep = 1);
+                      } else if (_currentStep == 1) {
+                        setState(() => _currentStep = 2);
                       } else {
                         _handleRegister();
                       }
@@ -110,7 +172,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       }
                     },
                     controlsBuilder: (context, details) {
-                      final isLastStep = _currentStep == 1;
+                      final isLastStep = _currentStep == 2;
                       return Padding(
                         padding: const EdgeInsets.only(top: 20),
                         child: Row(
@@ -212,6 +274,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                                 onPressed: () => setState(
                                   () => _obscurePassword = !_obscurePassword,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Step(
+                        title: const Text('Email OTP Verification'),
+                        isActive: _currentStep >= 2,
+                        content: Column(
+                          children: [
+                            AppTextField(
+                              controller: _otpController,
+                              hintText: 'Enter OTP sent to your email',
+                              prefixIcon: Icons.pin_outlined,
+                              keyboardType: TextInputType.number,
+                              validator: (v) {
+                                if (_currentStep < 2) return null;
+                                if (v == null || v.trim().length < 4) {
+                                  return 'Enter valid OTP';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              _awaitingOtpVerification
+                                  ? 'Verify OTP to finish registration.'
+                                  : 'Complete previous steps to receive OTP.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: _awaitingOtpVerification &&
+                                        _otpResendSeconds == 0
+                                    ? _resendRegistrationOtp
+                                    : null,
+                                child: Text(
+                                  _otpResendSeconds == 0
+                                      ? 'Resend OTP'
+                                      : 'Resend in ${_otpResendSeconds}s',
                                 ),
                               ),
                             ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -22,13 +24,55 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _otpController = TextEditingController();
+  final _resetOtpController = TextEditingController();
+  final _resetPasswordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _awaitingOtp = false;
+  bool _showReset = false;
+  int _otpResendSeconds = 0;
+  Timer? _otpResendTimer;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _otpController.dispose();
+    _resetOtpController.dispose();
+    _resetPasswordController.dispose();
+    _otpResendTimer?.cancel();
     super.dispose();
+  }
+
+  void _startOtpResendCountdown() {
+    _otpResendTimer?.cancel();
+    setState(() => _otpResendSeconds = 45);
+    _otpResendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_otpResendSeconds <= 1) {
+        timer.cancel();
+        setState(() => _otpResendSeconds = 0);
+        return;
+      }
+      setState(() => _otpResendSeconds -= 1);
+    });
+  }
+
+  Future<void> _resendLoginOtp() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || _otpResendSeconds > 0) return;
+    final authProvider = context.read<AuthProvider>();
+    final sent = await authProvider.requestSignInOtp(email);
+    if (!mounted) return;
+    if (sent) {
+      _startOtpResendCountdown();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('OTP resent to your email.')),
+      );
+    }
   }
 
   void _propagateUserId(String userId) {
@@ -52,10 +96,26 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.login(
-      _emailController.text.trim(),
-      _passwordController.text,
-    );
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    bool success;
+    if (_awaitingOtp) {
+      success = await authProvider.verifyOtpAndLogin(
+        email: email,
+        otp: _otpController.text.trim(),
+        password: password,
+      );
+    } else {
+      success = await authProvider.requestSignInOtp(email);
+      if (success && mounted) {
+        setState(() => _awaitingOtp = true);
+        _startOtpResendCountdown();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('OTP sent to your email.')),
+        );
+      }
+      return;
+    }
 
     if (!mounted) return;
 
@@ -69,6 +129,42 @@ class _LoginScreenState extends State<LoginScreen> {
           content: Text(authProvider.errorMessage ?? 'Login failed'),
           backgroundColor: AppColors.error,
         ),
+      );
+    }
+  }
+
+  Future<void> _handlePasswordReset() async {
+    final authProvider = context.read<AuthProvider>();
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter your email first.')),
+      );
+      return;
+    }
+    if (!_showReset) {
+      final sent = await authProvider.requestPasswordResetOtp(email);
+      if (!mounted) return;
+      if (sent) {
+        setState(() => _showReset = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password reset OTP sent.')),
+        );
+      }
+      return;
+    }
+    final ok = await authProvider.resetPasswordWithOtp(
+      email: email,
+      otp: _resetOtpController.text.trim(),
+      newPassword: _resetPasswordController.text.trim(),
+    );
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _showReset = false);
+      _resetOtpController.clear();
+      _resetPasswordController.clear();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password reset successful.')),
       );
     }
   }
@@ -146,17 +242,60 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
+                if (_awaitingOtp) ...[
+                  const SizedBox(height: 16),
+                  AppTextField(
+                    controller: _otpController,
+                    hintText: 'Enter OTP',
+                    prefixIcon: Icons.pin_outlined,
+                    keyboardType: TextInputType.number,
+                    validator: (v) {
+                      if (!_awaitingOtp) return null;
+                      if (v == null || v.trim().length < 4) {
+                        return 'Enter valid OTP';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: _otpResendSeconds == 0 ? _resendLoginOtp : null,
+                      child: Text(
+                        _otpResendSeconds == 0
+                            ? 'Resend OTP'
+                            : 'Resend in ${_otpResendSeconds}s',
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: _handlePasswordReset,
                     child: Text(l10n.forgotPassword),
                   ),
                 ),
+                if (_showReset) ...[
+                  const SizedBox(height: 8),
+                  AppTextField(
+                    controller: _resetOtpController,
+                    hintText: 'Reset OTP',
+                    prefixIcon: Icons.password,
+                  ),
+                  const SizedBox(height: 12),
+                  AppTextField(
+                    controller: _resetPasswordController,
+                    hintText: 'New password',
+                    prefixIcon: Icons.lock_reset_outlined,
+                    obscureText: true,
+                  ),
+                ],
                 const SizedBox(height: 16),
                 AppButton(
-                  text: l10n.login,
+                  text: _awaitingOtp ? 'Verify OTP & Login' : 'Send login OTP',
                   onPressed: _handleLogin,
                   isLoading: isLoading,
                 ),

@@ -427,4 +427,123 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get emergencySendFailed =>
       'Could not send alert. Try again or call emergency services.';
+
+  @override
+  String get profileNamePhoneRequired => 'Name and phone number are required';
+
+  @override
+  String get profileUpdatedSuccessfully => 'Profile updated successfully';
+
+  @override
+  String get profileActivityAccountCreated => 'Account created';
+
+  @override
+  String get profileActivityDriverConfigured => 'Driver profile configured';
+
+  @override
+  String get profileActivityPassengerActive => 'Passenger profile active';
+
+  @override
+  String get profileActivityVehicleDetails => 'Vehicle details available';
+
+  @override
+  String get profileActivityReadyToBook => 'Ready to book rides';
+
+  @override
+  String get profileActivityIdentityVerification => 'Identity verification';
+
+  @override
+  String get profileStatusGoodStanding => 'In good standing';
+
+  @override
+  String get profileStatusPendingVerificationDetails =>
+      'Pending verification details';
+
+  @override
+  String get profileActivityManageAlerts =>
+      'Manage alerts from your account menu';
+
+  @override
+  String get profilePersonalDetailsTitle => 'Personal details';
+
+  @override
+  String get profilePersonalDetailsSubtitle =>
+      'Your account information used for bookings and safety.';
+
+  @override
+  String get profileDriverDetailsTitle => 'Driver details';
+
+  @override
+  String get profileDriverDetailsSubtitle =>
+      'Vehicle details visible to passengers while booking.';
+
+  @override
+  String get profileQuickActionsTitle => 'Quick actions';
+
+  @override
+  String get profileQuickActionsSubtitle =>
+      'Frequently used account actions and preferences.';
+
+  @override
+  String get profileRecentActivityTitle => 'Recent activity';
+
+  @override
+  String get profileRecentActivitySubtitle =>
+      'A quick overview of your latest account events.';
+
+  @override
+  String get profileNoActivityTitle => 'No activity yet';
+
+  @override
+  String get profileNoActivityMessage =>
+      'Once you book rides or update your profile, updates will appear here.';
+
+  @override
+  String get profileCompletionLabel => 'Profile completion';
+
+  @override
+  String get profileRoleLabel => 'Role';
+
+  @override
+  String get profileStatusLabel => 'Status';
+
+  @override
+  String get profileStatusActive => 'Active';
+
+  @override
+  String get profileStatusPending => 'Pending';
+
+  @override
+  String get profileNotProvided => 'Not provided';
+
+  @override
+  String get profileEditSubtitle =>
+      'Update your personal details and ride identity information.';
+
+  @override
+  String get profilePhotoUploadPreview => 'Photo upload preview';
+
+  @override
+  String get profilePhotoSyncingNote =>
+      'Photo syncing will be enabled in the next API update.';
+
+  @override
+  String get profileBasicInformationTitle => 'Basic information';
+
+  @override
+  String get profileBasicInformationSubtitle =>
+      'This information appears to riders and admins.';
+
+  @override
+  String get profileVehicleInformationTitle => 'Vehicle information';
+
+  @override
+  String get profileVehicleInformationSubtitle =>
+      'Keep these details current so passengers can trust your listing.';
+
+  @override
+  String get profileSaving => 'Saving...';
+
+  @override
+  String get profileUserLabel => 'User';
 }

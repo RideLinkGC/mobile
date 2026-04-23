@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/network/api_exceptions.dart';
 import '../../../../core/services/storage_service.dart';
 import '../models/trip_series_model.dart';
 import '../../../passenger/booking/models/trip_subscription_model.dart';
@@ -22,6 +23,20 @@ class TripSeriesProvider extends ChangeNotifier {
 
   TripSeriesProvider(this._apiClient, this._storage);
 
+  List<dynamic> _extractList(dynamic data, {List<String> keys = const []}) {
+    if (data is List) return data;
+    if (data is Map<String, dynamic>) {
+      for (final key in keys) {
+        final value = data[key];
+        if (value is List) return value;
+      }
+      for (final value in data.values) {
+        if (value is List) return value;
+      }
+    }
+    return const [];
+  }
+
   Future<void> loadDriverSeries() async {
     _loading = true;
     _error = null;
@@ -35,8 +50,8 @@ class TripSeriesProvider extends ChangeNotifier {
           if (driverId != null) 'driverId': driverId,
         },
       );
-      final list = response.data as List?;
-      if (list != null) {
+      final list = _extractList(response.data, keys: const ['series', 'items']);
+      if (list.isNotEmpty) {
         _series = list
             .map((e) => TripSeriesModel.fromJson(e as Map<String, dynamic>))
             .toList();
@@ -108,10 +123,11 @@ class TripSeriesProvider extends ChangeNotifier {
         return;
       }
 
-      final response = await _apiClient
-          .get(ApiEndpoints.passengerSubscriptions(passengerId));
-      final list = response.data as List?;
-      if (list != null) {
+      final response =
+          await _apiClient.get(ApiEndpoints.passengerSubscriptions(passengerId));
+      final list =
+          _extractList(response.data, keys: const ['subscriptions', 'items']);
+      if (list.isNotEmpty) {
         _subscriptions = list
             .map((e) =>
                 TripSubscriptionModel.fromJson(e as Map<String, dynamic>))
@@ -128,7 +144,7 @@ class TripSeriesProvider extends ChangeNotifier {
 
   Future<bool> subscribe({
     required String seriesId,
-    required String passengerId,
+    String? passengerId,
     required String subscriptionType,
     int seatsSubscribed = 1,
     required double pricePerPeriod,
@@ -138,11 +154,18 @@ class TripSeriesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final resolvedPassengerId = passengerId ?? await _storage.getPassengerId();
+      if (resolvedPassengerId == null || resolvedPassengerId.isEmpty) {
+        _error = 'Passenger profile not found';
+        _loading = false;
+        notifyListeners();
+        return false;
+      }
       await _apiClient.post(
         ApiEndpoints.createSubscription,
         data: {
           'seriesId': seriesId,
-          'passengerId': passengerId,
+          'passengerId': resolvedPassengerId,
           'subscriptionType': subscriptionType,
           'seatsSubscribed': seatsSubscribed,
           'pricePerPeriod': pricePerPeriod,
@@ -152,9 +175,9 @@ class TripSeriesProvider extends ChangeNotifier {
       _loading = false;
       notifyListeners();
       return true;
-    } catch (e) {
+    } on ApiException catch (e) {
       debugPrint('Failed to subscribe: $e');
-      _error = 'Failed to create subscription';
+      _error = e.message;
       _loading = false;
       notifyListeners();
       return false;

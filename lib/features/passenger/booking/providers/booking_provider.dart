@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/network/api_exceptions.dart';
 import '../../../../core/services/storage_service.dart';
 import '../models/booking_model.dart';
 
@@ -23,6 +24,20 @@ class BookingProvider extends ChangeNotifier {
 
   BookingProvider(this._apiClient, this._storage);
 
+  List<dynamic> _extractList(dynamic data, {List<String> keys = const []}) {
+    if (data is List) return data;
+    if (data is Map<String, dynamic>) {
+      for (final key in keys) {
+        final value = data[key];
+        if (value is List) return value;
+      }
+      for (final value in data.values) {
+        if (value is List) return value;
+      }
+    }
+    return const [];
+  }
+
   Future<void> loadBookings() async {
     _loading = true;
     _error = null;
@@ -37,10 +52,10 @@ class BookingProvider extends ChangeNotifier {
         return;
       }
 
-      final response =
-          await _apiClient.get(ApiEndpoints.passengerBookings(passengerId));
-      final list = response.data as List?;
-      if (list != null) {
+      final response = await _apiClient.get(ApiEndpoints.passengerBookings(passengerId));
+      final list =
+          _extractList(response.data, keys: const ['bookings', 'items']);
+      if (list.isNotEmpty) {
         _bookings = list
             .map((e) => BookingModel.fromJson(e as Map<String, dynamic>))
             .toList();
@@ -56,7 +71,7 @@ class BookingProvider extends ChangeNotifier {
 
   Future<bool> requestBooking({
     required String tripId,
-    required String passengerId,
+    String? passengerId,
     int seatsBooked = 1,
     required double totalPrice,
     String? pickUpPoint,
@@ -69,11 +84,18 @@ class BookingProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final resolvedPassengerId = passengerId ?? await _storage.getPassengerId();
+      if (resolvedPassengerId == null || resolvedPassengerId.isEmpty) {
+        _error = 'Passenger profile not found';
+        _loading = false;
+        notifyListeners();
+        return false;
+      }
       final response = await _apiClient.post(
         ApiEndpoints.createBooking,
         data: {
           'tripId': tripId,
-          'passengerId': passengerId,
+          'passengerId': resolvedPassengerId,
           'seatsBooked': seatsBooked,
           'totalPrice': totalPrice,
           'recurrence': recurrence,
@@ -88,9 +110,9 @@ class BookingProvider extends ChangeNotifier {
       _loading = false;
       notifyListeners();
       return true;
-    } catch (e) {
+    } on ApiException catch (e) {
       debugPrint('Failed to request booking: $e');
-      _error = 'Failed to request booking';
+      _error = e.message;
       _loading = false;
       notifyListeners();
       return false;

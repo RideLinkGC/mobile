@@ -427,4 +427,118 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get emergencySendFailed =>
       'Could not send alert. Try again or call emergency services.';
+
+  @override
+  String get profileNamePhoneRequired => 'ሙሉ ስም እና ስልክ ቁጥር አስፈላጊ ናቸው';
+
+  @override
+  String get profileUpdatedSuccessfully => 'መገለጫው በተሳካ ሁኔታ ተዘምኗል';
+
+  @override
+  String get profileActivityAccountCreated => 'መለያ ተፈጥሯል';
+
+  @override
+  String get profileActivityDriverConfigured => 'የአሽከርካሪ መገለጫ ተዘጋጅቷል';
+
+  @override
+  String get profileActivityPassengerActive => 'የተሳፋሪ መገለጫ ንቁ ነው';
+
+  @override
+  String get profileActivityVehicleDetails => 'የተሽከርካሪ ዝርዝሮች አሉ';
+
+  @override
+  String get profileActivityReadyToBook => 'ጉዞ ለማስያዝ ዝግጁ';
+
+  @override
+  String get profileActivityIdentityVerification => 'የመታወቂያ ማረጋገጫ';
+
+  @override
+  String get profileStatusGoodStanding => 'በመልካም ሁኔታ ላይ ነው';
+
+  @override
+  String get profileStatusPendingVerificationDetails =>
+      'የማረጋገጫ ዝርዝሮች በመጠባበቅ ላይ ናቸው';
+
+  @override
+  String get profileActivityManageAlerts => 'ማስጠንቀቂያዎችን ከመለያ ሜኑ ያስተዳድሩ';
+
+  @override
+  String get profilePersonalDetailsTitle => 'የግል መረጃ';
+
+  @override
+  String get profilePersonalDetailsSubtitle =>
+      'ለቦታ ማስያዣ እና ደህንነት የሚጠቀሙት የመለያ መረጃዎች።';
+
+  @override
+  String get profileDriverDetailsTitle => 'የአሽከርካሪ ዝርዝሮች';
+
+  @override
+  String get profileDriverDetailsSubtitle => 'ተሳፋሪዎች ሲያስይዙ የሚያዩት የተሽከርካሪ መረጃ።';
+
+  @override
+  String get profileQuickActionsTitle => 'ፈጣን እርምጃዎች';
+
+  @override
+  String get profileQuickActionsSubtitle =>
+      'ብዙ ጊዜ የሚጠቀሙት የመለያ እርምጃዎች እና ምርጫዎች።';
+
+  @override
+  String get profileRecentActivityTitle => 'የቅርብ እንቅስቃሴ';
+
+  @override
+  String get profileRecentActivitySubtitle => 'የቅርብ ጊዜ የመለያ ክንውኖች ፈጣን እይታ።';
+
+  @override
+  String get profileNoActivityTitle => 'እስካሁን እንቅስቃሴ የለም';
+
+  @override
+  String get profileNoActivityMessage =>
+      'ጉዞ ካስያዙ ወይም መገለጫዎን ካዘመኑ በኋላ ዝማኔዎች እዚህ ይታያሉ።';
+
+  @override
+  String get profileCompletionLabel => 'የመገለጫ ሙሉነት';
+
+  @override
+  String get profileRoleLabel => 'ሚና';
+
+  @override
+  String get profileStatusLabel => 'ሁኔታ';
+
+  @override
+  String get profileStatusActive => 'ንቁ';
+
+  @override
+  String get profileStatusPending => 'በመጠባበቅ ላይ';
+
+  @override
+  String get profileNotProvided => 'አልተሰጠም';
+
+  @override
+  String get profileEditSubtitle => 'የግል ዝርዝሮችዎን እና የጉዞ መለያ መረጃዎን ያዘምኑ።';
+
+  @override
+  String get profilePhotoUploadPreview => 'የፎቶ መጫኛ ቅድመ እይታ';
+
+  @override
+  String get profilePhotoSyncingNote => 'የፎቶ ማስማማት በሚቀጥለው የAPI ዝማኔ ውስጥ ይገባል።';
+
+  @override
+  String get profileBasicInformationTitle => 'መሰረታዊ መረጃ';
+
+  @override
+  String get profileBasicInformationSubtitle =>
+      'ይህ መረጃ ለተሳፋሪዎች እና ለአስተዳዳሪዎች ይታያል።';
+
+  @override
+  String get profileVehicleInformationTitle => 'የተሽከርካሪ መረጃ';
+
+  @override
+  String get profileVehicleInformationSubtitle =>
+      'ተሳፋሪዎች በመመንጨት ይተማመኑ ዘንድ እነዚህን ዝርዝሮች ዘመናዊ ያድርጉ።';
+
+  @override
+  String get profileSaving => 'በማስቀመጥ ላይ...';
+
+  @override
+  String get profileUserLabel => 'ተጠቃሚ';
 }

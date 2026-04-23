@@ -89,6 +89,20 @@ class TripProvider extends ChangeNotifier {
 
   TripProvider(this._apiClient, this._storage);
 
+  List<dynamic> _extractList(dynamic data, {List<String> keys = const []}) {
+    if (data is List) return data;
+    if (data is Map<String, dynamic>) {
+      for (final key in keys) {
+        final value = data[key];
+        if (value is List) return value;
+      }
+      for (final value in data.values) {
+        if (value is List) return value;
+      }
+    }
+    return const [];
+  }
+
   Future<void> loadDriverTrips() async {
     _loading = true;
     _error = null;
@@ -103,10 +117,9 @@ class TripProvider extends ChangeNotifier {
         return;
       }
 
-      final response =
-          await _apiClient.get(ApiEndpoints.driverTrips(driverId));
-      final list = response.data as List?;
-      if (list != null) {
+      final response = await _apiClient.get(ApiEndpoints.driverTrips(driverId));
+      final list = _extractList(response.data, keys: const ['trips', 'items']);
+      if (list.isNotEmpty) {
         _driverTrips = list
             .map((e) => TripModel.fromJson(e as Map<String, dynamic>))
             .toList();
@@ -200,7 +213,7 @@ class TripProvider extends ChangeNotifier {
   }
 
   Future<String?> createTrip({
-    required String driverId,
+    String? driverId,
     required String origin,
     required String destination,
     required List<Map<String, double>> routeCoordinates,
@@ -214,8 +227,15 @@ class TripProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final resolvedDriverId = driverId ?? await _storage.getDriverId();
+      if (resolvedDriverId == null || resolvedDriverId.isEmpty) {
+        _error = 'Driver profile not found';
+        _loading = false;
+        notifyListeners();
+        return null;
+      }
       final response = await _apiClient.post(ApiEndpoints.trips, data: {
-        'driverId': driverId,
+        'driverId': resolvedDriverId,
         'origin': origin,
         'destination': destination,
         'routeCoordinates': routeCoordinates,
@@ -291,10 +311,9 @@ class TripProvider extends ChangeNotifier {
 
   Future<List<BookingModel>> loadTripBookings(String tripId) async {
     try {
-      final response =
-          await _apiClient.get(ApiEndpoints.tripBookings(tripId));
-      final list = response.data as List?;
-      if (list != null) {
+      final response = await _apiClient.get(ApiEndpoints.tripBookings(tripId));
+      final list = _extractList(response.data, keys: const ['bookings', 'items']);
+      if (list.isNotEmpty) {
         _tripBookings = list
             .map((e) => BookingModel.fromJson(e as Map<String, dynamic>))
             .toList();

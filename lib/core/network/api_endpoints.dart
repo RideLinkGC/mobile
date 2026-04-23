@@ -7,10 +7,20 @@ class ApiEndpoints {
   static const String signOut = '/auth/sign-out';
   static const String getSession = '/auth/get-session';
   static const String getToken = '/auth/token';
+  static const String sendVerificationOtp =
+      '/auth/email-otp/send-verification-otp';
+  static const String verifyEmailOtp = '/auth/email-otp/verify-email';
+  static const String requestPasswordResetOtp =
+      '/auth/email-otp/request-password-reset';
+  static const String resetPasswordOtp = '/auth/email-otp/reset-password';
+  static const String requestEmailChangeOtp =
+      '/auth/email-otp/request-email-change';
+  static const String changeEmailOtp = '/auth/email-otp/change-email';
 
   // User
   static const String completeProfile = '/users/complete-profile';
   static const String becomeDriver = '/users/become-driver';
+  static const String verificationStatus = '/users/verification-status';
   // Uploads (presigned URLs)
   static const String presignUpload = '/upload';
   static const String completeUpload = '/complete';
@@ -46,6 +56,18 @@ class ApiEndpoints {
       '/series/subscriptions/$id/cancel';
   static String passengerSubscriptions(String passengerId) =>
       '/series/passengers/$passengerId/subscriptions';
+
+  // Payments
+  static const String paymentsInitiate = '/payments/initiate';
+  static const String paymentsVerify = '/payments/verify';
+  static String paymentsHistory(String userId) => '/payments/history/$userId';
+  static String paymentStatusByBooking(String bookingId) =>
+      '/payments/booking/$bookingId/status';
+
+  // Admin
+  static const String adminDocuments = '/admin/documents';
+  static String verifyDocument(String documentId) =>
+      '/admin/documents/$documentId/verify';
 
   // Feedback
   static const String feedback = '/feedback';
