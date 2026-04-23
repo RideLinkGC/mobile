@@ -11,6 +11,7 @@ class StorageService {
   static const String _userIdKey = 'user_id';
   static const String _passengerIdKey = 'passenger_id';
   static const String _driverIdKey = 'driver_id';
+  static const String _cachedUserJsonKey = 'cached_user_json';
   static const String _onboardingCompleteKey = 'onboarding_complete';
   static const String _localeKey = 'locale';
 
@@ -71,6 +72,11 @@ class StorageService {
     return prefs.getString(_passengerIdKey);
   }
 
+  Future<void> clearPassengerId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_passengerIdKey);
+  }
+
   Future<void> saveDriverId(String id) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_driverIdKey, id);
@@ -79,6 +85,34 @@ class StorageService {
   Future<String?> getDriverId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_driverIdKey);
+  }
+
+  Future<void> clearDriverId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_driverIdKey);
+  }
+
+  Future<void> clearProfileIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userRoleKey);
+    await prefs.remove(_userIdKey);
+    await prefs.remove(_passengerIdKey);
+    await prefs.remove(_driverIdKey);
+  }
+
+  Future<void> saveCachedUserJson(String userJson) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_cachedUserJsonKey, userJson);
+  }
+
+  Future<String?> getCachedUserJson() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_cachedUserJsonKey);
+  }
+
+  Future<void> clearCachedUserJson() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_cachedUserJsonKey);
   }
 
   Future<void> setOnboardingComplete() async {

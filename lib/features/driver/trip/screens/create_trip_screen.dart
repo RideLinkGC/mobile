@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:gebeta_gl/gebeta_gl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:ridelink/features/driver/common/driver_app_bar.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/gebeta_maps_service.dart';
@@ -12,6 +14,7 @@ import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/gebeta_map_widget.dart';
 import '../../../../core/widgets/location_search_field.dart';
+import '../../../auth/providers/auth_provider.dart';
 import '../providers/trip_provider.dart';
 
 class CreateTripScreen extends StatefulWidget {
@@ -43,6 +46,9 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     (6, 10),
     (17, 20),
   ];
+  static final RegExp _uuidV4Like = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
+  );
 
   @override
   void dispose() {
@@ -66,6 +72,13 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     final time = await showTimePicker(
       context: context,
       initialTime: _departureTime,
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        return MediaQuery(
+          data: media.copyWith(alwaysUse24HourFormat: true),
+          child: child!,
+        );
+      },
     );
     if (time != null) setState(() => _departureTime = time);
   }
@@ -129,6 +142,35 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     return [MapPolyline(points: points, color: AppColors.primaryMapHex, width: 4)];
   }
 
+  bool _isValidUuid(String? value) {
+    if (value == null) return false;
+    return _uuidV4Like.hasMatch(value.trim());
+  }
+
+  Future<String?> _resolveDriverId() async {
+    final storage = context.read<StorageService>();
+    final auth = context.read<AuthProvider>();
+
+    final authDriverId = auth.user?.driverId?.trim();
+    if (_isValidUuid(authDriverId)) return authDriverId;
+
+    final storedDriverId = (await storage.getDriverId())?.trim();
+    if (_isValidUuid(storedDriverId)) return storedDriverId;
+
+    final cachedUserJson = await storage.getCachedUserJson();
+    if (cachedUserJson != null && cachedUserJson.isNotEmpty) {
+      try {
+        final map = jsonDecode(cachedUserJson) as Map<String, dynamic>;
+        final cachedDriverId = (map['driverId'] as String?)?.trim();
+        if (_isValidUuid(cachedDriverId)) return cachedDriverId;
+      } catch (_) {
+        // Ignore malformed cache and continue with null.
+      }
+    }
+
+    return null;
+  }
+
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_originResult == null || _destinationResult == null) {
@@ -139,28 +181,31 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
           ),
         ),
       );
+      setState(() => _isLoading = false);
       return;
     }
     if (_route == null || _route!.polylinePoints.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('A valid route with at least two points is required'),
-          backgroundColor: AppColors.error,
+          backgroundColor: Color.fromARGB(255, 190, 163, 161),
         ),
       );
+      setState(() => _isLoading = false);
       return;
     }
-
-    final storage = context.read<StorageService>();
-    final driverId = await storage.getDriverId();
+    final driverId = await _resolveDriverId();
     if (!mounted) return;
     if (driverId == null || driverId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('You must be logged in as a driver to create a trip'),
+          content: Text(
+            'Driver profile is missing. Please complete driver setup, then try again.',
+          ),
           backgroundColor: AppColors.error,
         ),
       );
+      setState(() => _isLoading = false);
       return;
     }
 
@@ -191,6 +236,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
           backgroundColor: AppColors.error,
         ),
       );
+      setState(() => _isLoading = false);
       return;
     }
     final hour = departureTime.hour;
@@ -204,20 +250,10 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
           backgroundColor: AppColors.error,
         ),
       );
+      setState(() => _isLoading = false);
       return;
     }
-    final maxAllowedPrice = distanceKm * AppConstants.maxPricePerKmPerSeat;
-    if (pricePerSeat > maxAllowedPrice) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Price exceeds cap. Max allowed is ${maxAllowedPrice.toStringAsFixed(2)} ETB for this route.',
-          ),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
+ 
 
     final createdTripId = await provider.createTrip(
       driverId: driverId,
@@ -264,9 +300,9 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
         '${_departureDate.day}/${_departureDate.month}/${_departureDate.year}';
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.createTrip)),
+      appBar: driverAppBarWitDrawer(context, l10n.createTrip, true),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
         child: Form(
           key: _formKey,
           child: Column(

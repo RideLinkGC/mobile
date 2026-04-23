@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:gebeta_gl/gebeta_gl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:ridelink/features/driver/common/driver_app_bar.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 
 import '../../../../core/constants/app_constants.dart';
@@ -185,11 +186,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
       ..sort((a, b) => a.departureTime.compareTo(b.departureTime));
 
     return Scaffold(
-      appBar: AppBar(
-        leading: const ShellMenuButton(),
-        title: Text('Driver Dashboard'),
-        centerTitle: true,
-      ),
+      appBar: driverAppBarWitDrawer(context, l10n.home, true),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'driver_newTrip',
         onPressed: () => context.push('/create-trip'),

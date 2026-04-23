@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:ridelink/core/constants/enums.dart';
+import 'package:ridelink/features/driver/trip/models/trip_model.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/onboarding_screen.dart';
@@ -41,7 +43,27 @@ import '../widgets/main_scaffold.dart';
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
   static final _shellNavigatorKey = GlobalKey<NavigatorState>();
-
+  final demoActiveTrip = TripModel(
+    id: '1',
+    origin: 'Bole, Airport Main Gate Area',
+    destination: 'Kazanchis, Inter Luxury Hotel Hub',
+    routeCoordinates: const [
+      RouteCoordinate(lat: 9.0192, lng: 38.7525),
+      RouteCoordinate(lat: 9.0300, lng: 38.7800),
+    ],
+    driverName: 'Abebe Kebede',
+    driverRating: 4.8,
+    vehicleModel: 'Silver Toyota Corolla',
+    vehiclePlate: 'AA-3-45231',
+    vehicleSeats: 4,
+    bookedSeats: 1,
+    distanceKm: 11.2,
+    departureTime: DateTime.now(),
+    status: TripStatus.inProgress,
+    driverId: '1',
+    availableSeats: 4,
+    pricePerSeat: 100,
+  );
   static GoRouter router(BuildContext context) {
     final authProvider = context.read<AuthProvider>();
 
@@ -114,7 +136,7 @@ class AppRouter {
             ),
             GoRoute(
               path: '/driver-active',
-              builder: (context, state) => const DriverActiveScreen(),
+              builder: (context, state) => DriverActiveScreen(),
             ),
             GoRoute(
               path: '/chat-list',

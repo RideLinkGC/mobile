@@ -1,4 +1,5 @@
 import 'package:convex_flutter/convex_flutter.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
@@ -9,7 +10,7 @@ import '../models/user_model.dart';
 
 enum AuthState { initial, loading, authenticated, unauthenticated, error }
 
-class AuthProvider extends ChangeNotifier {
+class   AuthProvider extends ChangeNotifier {
   final ApiClient _apiClient;
   final StorageService _storage;
   final ConvexClient? _convex;
@@ -23,6 +24,7 @@ class AuthProvider extends ChangeNotifier {
 
   AuthState get state => _state;
   UserModel? get user => _user;
+  String? get userId => _user?.id;
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _state == AuthState.authenticated;
   bool get isDriver => _user?.role == UserRole.driver;
@@ -88,6 +90,7 @@ class AuthProvider extends ChangeNotifier {
       final data = response.data as Map<String, dynamic>?;
       if (data != null && data['user'] != null) {
         _user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
+        await _hydrateUserFromMe();
         await _persistUserIds(_user!);
         _state = AuthState.authenticated;
       } else {
@@ -129,10 +132,12 @@ class AuthProvider extends ChangeNotifier {
       }
 
       await _storage.saveAccessToken(sessionToken);
-
       final userData = data['user'] as Map<String, dynamic>?;
       if (userData != null) {
         _user = UserModel.fromJson(userData);
+      }
+      await _hydrateUserFromMe();
+      if (_user != null) {
         await _persistUserIds(_user!);
       }
 
@@ -335,6 +340,7 @@ class AuthProvider extends ChangeNotifier {
       final sessionData = sessionResp.data as Map<String, dynamic>?;
       if (sessionData?['user'] != null) {
         _user = UserModel.fromJson(sessionData!['user'] as Map<String, dynamic>);
+        await _hydrateUserFromMe();
         await _persistUserIds(_user!);
       }
 
@@ -455,6 +461,8 @@ class AuthProvider extends ChangeNotifier {
     _user = null;
     _state = AuthState.unauthenticated;
     await _storage.clearTokens();
+    await _storage.clearProfileIds();
+    await _storage.clearCachedUserJson();
     await _syncConvexAuth();
     notifyListeners();
   }
@@ -485,11 +493,29 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _persistUserIds(UserModel user) async {
     await _storage.saveUserRole(user.role.name);
     await _storage.saveUserId(user.id);
-    if (user.passengerId != null) {
+    if (user.passengerId != null && user.passengerId!.isNotEmpty) {
       await _storage.savePassengerId(user.passengerId!);
+    } else {
+      await _storage.clearPassengerId();
     }
-    if (user.driverId != null) {
+    if (user.driverId != null && user.driverId!.isNotEmpty) {
       await _storage.saveDriverId(user.driverId!);
+    } else {
+      await _storage.clearDriverId();
+    }
+    await _storage.saveCachedUserJson(jsonEncode(user.toJson()));
+  }
+
+  Future<void> _hydrateUserFromMe() async {
+    try {
+      final meResponse = await _apiClient.get(ApiEndpoints.me);
+      final meData = meResponse.data as Map<String, dynamic>?;
+      final meUser = meData?['user'] as Map<String, dynamic>?;
+      if (meUser != null) {
+        _user = UserModel.fromJson(meUser);
+      }
+    } catch (e) {
+      debugPrint('/users/me fetch failed: $e');
     }
   }
 }

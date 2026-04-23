@@ -42,7 +42,11 @@ class _SearchScreenState extends State<SearchScreen> {
     _loadUserLocation();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<SearchProvider>().loadBrowseDrivers();
+      context.read<SearchProvider>().setBrowseBackendFilters(
+            status: 'scheduled',
+            page: 1,
+            limit: 20,
+          );
     });
   }
 
@@ -124,6 +128,13 @@ class _SearchScreenState extends State<SearchScreen> {
               _destinationResult = d;
             });
             Navigator.of(ctx).pop();
+            context.read<SearchProvider>().setBrowseBackendFilters(
+                  origin: _originResult?.name,
+                  destination: _destinationResult?.name,
+                  status: 'scheduled',
+                  page: 1,
+                  limit: 20,
+                );
             _onSearch();
           },
           onApplyOnly: (o, d) {
@@ -131,6 +142,13 @@ class _SearchScreenState extends State<SearchScreen> {
               _originResult = o;
               _destinationResult = d;
             });
+            context.read<SearchProvider>().setBrowseBackendFilters(
+                  origin: _originResult?.name,
+                  destination: _destinationResult?.name,
+                  status: 'scheduled',
+                  page: 1,
+                  limit: 20,
+                );
             Navigator.of(ctx).pop();
           },
         );

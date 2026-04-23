@@ -18,6 +18,7 @@ class ApiEndpoints {
   static const String changeEmailOtp = '/auth/email-otp/change-email';
 
   // User
+  static const String me = '/users/me';
   static const String completeProfile = '/users/complete-profile';
   static const String becomeDriver = '/users/become-driver';
   static const String verificationStatus = '/users/verification-status';

@@ -1,17 +1,16 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ridelink/core/widgets/shell_drawer_scope.dart';
 
-AppBar passengerAppBar(BuildContext context, String title) {
+  AppBar driverAppBarWitDrawer(BuildContext context, String title, bool hasDrawer) {
  
     return AppBar(
-      leading:  ShellMenuButton(
+      leading: hasDrawer ? ShellMenuButton(
         color: Colors.white,
-      ),
+      ) : null,
       title: Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white)),
+      backgroundColor: Colors.blue,
       centerTitle: true,
-      backgroundColor: Theme.of(context).colorScheme.primaryFixedDim,
       actions: [
         IconButton(
           icon: Icon(Icons.notifications_rounded,
@@ -24,3 +23,4 @@ AppBar passengerAppBar(BuildContext context, String title) {
     );
   
 }
+

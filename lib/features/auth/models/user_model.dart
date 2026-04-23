@@ -48,6 +48,8 @@ class UserModel {
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final passenger = json['passenger'] as Map<String, dynamic>?;
     final driver = json['driver'] as Map<String, dynamic>?;
+    final topLevelPassengerId = json['passengerId'] as String?;
+    final topLevelDriverId = json['driverId'] as String?;
 
     return UserModel(
       id: json['id'] as String? ?? '',
@@ -61,10 +63,10 @@ class UserModel {
       role: _parseRole(json['role'] as String?),
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       banned: json['banned'] as bool? ?? false,
-      passengerId: passenger?['id'] as String?,
+      passengerId: passenger?['id'] as String? ?? topLevelPassengerId,
       preferredRoutes:
           (passenger?['prefferedRoutes'] as List?)?.cast<String>(),
-      driverId: driver?['id'] as String?,
+      driverId: driver?['id'] as String? ?? topLevelDriverId,
       licenseNumber: driver?['licenseNumber'] as String?,
       vehicleModel: driver?['vehicleModel'] as String?,
       vehiclePlate: driver?['vehiclePlate'] as String?,
@@ -85,6 +87,12 @@ class UserModel {
       'role': role.name,
       'rating': rating,
       'banned': banned,
+      'passengerId': passengerId,
+      'driverId': driverId,
+      'licenseNumber': licenseNumber,
+      'vehicleModel': vehicleModel,
+      'vehiclePlate': vehiclePlate,
+      'vehicleSeats': vehicleSeats,
     };
   }
 

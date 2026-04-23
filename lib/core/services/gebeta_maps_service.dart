@@ -91,6 +91,15 @@ class GebetaMapsService {
     try {
       final response = await _dio.get(
         '/route/geocoding',
+        // add headers
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'origin': "https://docs.gebeta.app",
+            'referer': "https://docs.gebeta.app/"
+          },
+        ),
         queryParameters: {
           'name': query,
           'apiKey': AppConstants.gebetaMapsApiKey,
@@ -128,6 +137,14 @@ class GebetaMapsService {
     try {
       final response = await _dio.get(
         '/route/revgeocoding',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'origin': "https://docs.gebeta.app",
+            'referer': "https://docs.gebeta.app/"
+          },
+        ),
         queryParameters: {
           'lat': lat,
           'lon': lng,
@@ -172,6 +189,14 @@ class GebetaMapsService {
       final response = await _dio.get(
         AppConstants.gebetaDirectionsUrl,
         queryParameters: query,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'origin': "https://docs.gebeta.app",
+            'referer': "https://docs.gebeta.app/"
+          },
+        ),
       );
 
       final raw = response.data;

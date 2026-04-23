@@ -15,7 +15,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/gebeta_map_widget.dart';
 import '../../../driver/trip/providers/trip_provider.dart';
 import '../../../emergency/widgets/emergency_alert_sheet.dart';
-import '../../booking/data/passenger_bookings_mock.dart';
+import '../../booking/models/booking_model.dart';
+import '../../booking/models/passenger_booking_list_item.dart';
 import '../../booking/widgets/passenger_booking_list_card.dart';
 
 /// In-progress trip shown on the map (matches mock catalog `t1` for tracking/SOS).
@@ -38,6 +39,10 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
   LatLng? _userLocation;
   TripModel? _currentTrip;
   RouteResult? _directionRoute;
+  List<PassengerBookingListItem> _activeTrips = const [];
+  List<TripModel> _activeTripModels = const [];
+  bool _activeTripsLoading = false;
+  String? _activeTripsError;
   bool _showTravelBanner = true;
 
   late AnimationController _fabEntranceController;
@@ -110,6 +115,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<LocationService>().ensureLocationPermissionRequested();
       _loadCurrentTrip();
+      _loadActiveTrips();
       if (mounted) _fabEntranceController.forward();
       Future<void>.delayed(const Duration(milliseconds: 200), () {
         if (mounted) _bannerAnimController.forward();
@@ -132,9 +138,11 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
   }
 
   Future<void> _loadCurrentTrip() async {
+    if (_activeTripModels.isNotEmpty) return;
     final trip =
         await context.read<TripProvider>().getTripById(_kCurrentTripId);
     if (!mounted) return;
+    if (_activeTripModels.isNotEmpty) return;
     setState(() => _currentTrip = trip);
     await _loadDirectionRoute();
   }
@@ -201,12 +209,93 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
   Future<void> _onRefresh() async {
     await Future.wait([
       _loadCurrentTrip(),
+      _loadActiveTrips(),
       _getUserLocation(),
     ]);
   }
 
-  void _openLiveTracking(BuildContext context) {
-    context.push('/tracking/$_kCurrentTripId');
+  Future<void> _loadActiveTrips() async {
+    if (mounted) {
+      setState(() {
+        _activeTripsLoading = true;
+        _activeTripsError = null;
+      });
+    }
+
+    final bookings = await context.read<TripProvider>().loadPassengerBookings();
+    if (!mounted) return;
+
+    final now = DateTime.now();
+    final activeTrips = bookings
+        .where((b) => b.status == BookingStatus.confirmed)
+        .where((b) => b.tripDepartureTime != null)
+        .where((b) => b.tripDepartureTime!.isAfter(now))
+        .toList()
+      ..sort((a, b) => a.tripDepartureTime!.compareTo(b.tripDepartureTime!));
+
+    final activeTripItems = activeTrips.map(_toActiveTripListItem).toList();
+    final activeTripModels = activeTrips.map(_toActiveTripModel).toList();
+
+    setState(() {
+      _activeTrips = activeTripItems;
+      _activeTripModels = activeTripModels;
+      if (activeTripModels.isNotEmpty) {
+        _currentTrip = activeTripModels.first;
+      }
+      _activeTripsLoading = false;
+      _activeTripsError =
+          activeTripItems.isEmpty ? 'No active confirmed upcoming trips.' : null;
+    });
+    if (activeTripModels.isNotEmpty) {
+      await _loadDirectionRoute();
+    }
+  }
+
+  PassengerBookingListItem _toActiveTripListItem(BookingModel booking) {
+    final departureTime = booking.tripDepartureTime ?? DateTime.now();
+    return PassengerBookingListItem(
+      id: booking.id,
+      tripId: booking.tripId,
+      driverName: booking.driverName ?? 'Driver',
+      origin: booking.tripOrigin ?? booking.pickUpPoint ?? 'Unknown origin',
+      destination:
+          booking.tripDestination ?? booking.dropOffPoint ?? 'Unknown destination',
+      departureTime: departureTime,
+      totalPrice: booking.totalPrice,
+      seatsBooked: booking.seatsBooked,
+      kind: PassengerBookingListKind.active,
+      isRecurrent: booking.isSubscription,
+      recurrenceLabel: booking.isSubscription ? 'Subscription' : null,
+    );
+  }
+
+  TripModel _toActiveTripModel(BookingModel booking) {
+    return TripModel(
+      id: booking.tripId,
+      driverId: booking.tripDriverId ?? '',
+      origin: booking.tripOrigin ?? booking.pickUpPoint ?? 'Unknown origin',
+      destination:
+          booking.tripDestination ?? booking.dropOffPoint ?? 'Unknown destination',
+      routeCoordinates: booking.tripRouteCoordinates,
+      distanceKm: booking.tripDistanceKm ?? 0,
+      departureTime: booking.tripDepartureTime ?? DateTime.now(),
+      availableSeats: booking.tripAvailableSeats ?? booking.seatsBooked,
+      pricePerSeat: booking.tripPricePerSeat ??
+          (booking.seatsBooked > 0 ? booking.totalPrice / booking.seatsBooked : 0),
+      status: TripStatus.scheduled,
+      driverName: booking.driverName ?? 'Driver',
+      bookedSeats: booking.seatsBooked,
+    );
+  }
+
+  String get _currentTrackingTripId =>
+      _activeTripModels.isNotEmpty
+          ? _activeTripModels.first.id
+          : (_currentTrip?.id ?? _kCurrentTripId);
+
+  void _openLiveTracking(BuildContext context, {String? tripId}) {
+    final selectedTripId = tripId ?? _currentTrackingTripId;
+    context.push('/tracking/$selectedTripId');
   }
 
   LatLng get _routeStart {
@@ -288,7 +377,8 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
     final screenH = MediaQuery.sizeOf(context).height;
     final mapHeight = screenH * _kMapHeightFraction;
 
-    final activeTrips = PassengerBookingsMock.active();
+    final activeTrips = _activeTrips;
+    final currentActiveTrip = _activeTripModels.isNotEmpty ? _activeTripModels.first : trip;
 
     final surfaceCard = colorScheme.surfaceContainerHighest.withValues(
       alpha: theme.brightness == Brightness.dark ? 0.94 : 1,
@@ -321,7 +411,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
           heroTag: 'passenger_home_sos',
           tooltip: l10n.sos,
           onPressed: () =>
-              showEmergencyAlertFlow(context, _kCurrentTripId),
+              showEmergencyAlertFlow(context, _currentTrackingTripId),
           backgroundColor: AppColors.sosRed,
           foregroundColor: Colors.white,
           elevation: 6,
@@ -441,13 +531,13 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
                       shadowColor: Colors.black26,
                       child: Padding(
                         padding: const EdgeInsets.all(18),
-                        child: PassengerActiveTripCard(trip: trip),
+                        child: PassengerActiveTripCard(trip: currentActiveTrip),
                         ),
                     ),
                     const SizedBox(height: 16),
                     FilledButton(
                       onPressed: () =>
-                          context.push('/rating/$_kCurrentTripId'),
+                          context.push('/rating/${currentActiveTrip.id}'),
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -512,6 +602,25 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
                 ),
               ),
             ),
+            if (_activeTripsLoading)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16, 12, 16, 24),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ),
+            if (!_activeTripsLoading && _activeTripsError != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                  child: Text(
+                    _activeTripsError!,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondaryLight,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

@@ -39,6 +39,16 @@ class SearchProvider extends ChangeNotifier {
   double? _maxPrice;
   int? _minSeats;
   TimeOfDay? _preferredTime;
+  String? _browseOriginQuery;
+  String? _browseDestinationQuery;
+  String _browseStatusQuery = 'scheduled';
+  DateTime? _browseDepartureTimeFromQuery;
+  DateTime? _browseDepartureTimeToQuery;
+  int? _browseMinSeatsQuery;
+  double? _browseMaxPriceQuery;
+  String? _browseSeriesIdQuery;
+  int _browsePageQuery = 1;
+  int _browseLimitQuery = 20;
 
   List<TripModel> get searchResults => _sortedResults;
   List<TripModel> get browseDriverTrips => _browseDriverTrips;
@@ -121,66 +131,109 @@ class SearchProvider extends ChangeNotifier {
 
   SearchProvider(this._apiClient, this._mapsService);
 
-  /// Loads scheduled trips and collapses to one representative trip per driver
-  /// (highest rating, then soonest departure), sorted by rating.
+  List<Map<String, dynamic>> _extractTripMaps(dynamic data) {
+    if (data is List) {
+      return data.whereType<Map<String, dynamic>>().toList();
+    }
+    if (data is Map<String, dynamic>) {
+      final trips = data['trips'];
+      if (trips is List) {
+        return trips.whereType<Map<String, dynamic>>().toList();
+      }
+      final items = data['items'];
+      if (items is List) {
+        return items.whereType<Map<String, dynamic>>().toList();
+      }
+      final nestedData = data['data'];
+      if (nestedData is List) {
+        return nestedData.whereType<Map<String, dynamic>>().toList();
+      }
+      if (nestedData is Map<String, dynamic>) {
+        final nestedTrips = nestedData['trips'];
+        if (nestedTrips is List) {
+          return nestedTrips.whereType<Map<String, dynamic>>().toList();
+        }
+      }
+    }
+    return const [];
+  }
+
+  Future<void> setBrowseBackendFilters({
+    String? origin,
+    String? destination,
+    String? status,
+    DateTime? departureTimeFrom,
+    DateTime? departureTimeTo,
+    int? minSeats,
+    double? maxPrice,
+    String? seriesId,
+    int? page,
+    int? limit,
+  }) async {
+    _browseOriginQuery = origin?.trim().isNotEmpty == true ? origin!.trim() : null;
+    _browseDestinationQuery =
+        destination?.trim().isNotEmpty == true ? destination!.trim() : null;
+    _browseStatusQuery = status?.trim().isNotEmpty == true ? status!.trim() : 'scheduled';
+    _browseDepartureTimeFromQuery = departureTimeFrom;
+    _browseDepartureTimeToQuery = departureTimeTo;
+    _browseMinSeatsQuery = minSeats;
+    _browseMaxPriceQuery = maxPrice;
+    _browseSeriesIdQuery = seriesId?.trim().isNotEmpty == true ? seriesId!.trim() : null;
+    _browsePageQuery = page ?? 1;
+    _browseLimitQuery = limit ?? 20;
+    await loadBrowseDrivers();
+  }
+
+  /// Loads browse trips from backend (no per-driver dedupe).
   Future<void> loadBrowseDrivers() async {
     _browseLoading = true;
     _browseError = null;
     notifyListeners();
 
     try {
+      final query = <String, dynamic>{
+        'status': _browseStatusQuery,
+        'page': _browsePageQuery,
+        'limit': _browseLimitQuery,
+        if (_browseOriginQuery != null) 'origin': _browseOriginQuery,
+        if (_browseDestinationQuery != null)
+          'destination': _browseDestinationQuery,
+        if (_browseDepartureTimeFromQuery != null)
+          'departureTimeFrom': _browseDepartureTimeFromQuery!.toIso8601String(),
+        if (_browseDepartureTimeToQuery != null)
+          'departureTimeTo': _browseDepartureTimeToQuery!.toIso8601String(),
+        if (_browseMinSeatsQuery != null) 'minSeats': _browseMinSeatsQuery,
+        if (_browseMaxPriceQuery != null) 'maxPrice': _browseMaxPriceQuery,
+        if (_browseSeriesIdQuery != null) 'seriesId': _browseSeriesIdQuery,
+      };
       final response = await _apiClient.get(
         ApiEndpoints.trips,
-        queryParameters: {'status': 'scheduled'},
+        queryParameters: query,
       );
-      final list = response.data as List?;
-      if (list != null && list.isNotEmpty) {
-        final trips = list
-            .map((e) => TripModel.fromJson(e as Map<String, dynamic>))
-            .toList();
-        _browseDriverTrips = _dedupeByDriver(trips);
+      final tripMaps = _extractTripMaps(response.data);
+      if (tripMaps.isNotEmpty) {
+        final trips = tripMaps.map(TripModel.fromJson).toList();
+        // Keep all backend trips; users may want to see multiple rides by same driver.
+        trips.sort((a, b) {
+          final ra = a.driverRating ?? 0;
+          final rb = b.driverRating ?? 0;
+          final c = rb.compareTo(ra);
+          if (c != 0) return c;
+          return a.departureTime.compareTo(b.departureTime);
+        });
+        _browseDriverTrips = trips;
       } else {
-        _browseDriverTrips = _dedupeByDriver(_fallbackResults);
+        _browseDriverTrips = [];
       }
       _browseError = null;
     } catch (e) {
       debugPrint('Browse drivers failed: $e');
       _browseError = 'Could not refresh driver list.';
-      _browseDriverTrips = _dedupeByDriver(_fallbackResults);
+      _browseDriverTrips = [];
     }
 
     _browseLoading = false;
     notifyListeners();
-  }
-
-  List<TripModel> _dedupeByDriver(List<TripModel> trips) {
-    final map = <String, TripModel>{};
-    for (final trip in trips) {
-      if (trip.driverId.isEmpty) continue;
-      final existing = map[trip.driverId];
-      if (existing == null) {
-        map[trip.driverId] = trip;
-      } else {
-        map[trip.driverId] = _preferRepresentativeTrip(existing, trip);
-      }
-    }
-    final out = map.values.toList();
-    out.sort((a, b) {
-      final ra = a.driverRating ?? 0;
-      final rb = b.driverRating ?? 0;
-      final c = rb.compareTo(ra);
-      if (c != 0) return c;
-      return a.departureTime.compareTo(b.departureTime);
-    });
-    return out;
-  }
-
-  TripModel _preferRepresentativeTrip(TripModel a, TripModel b) {
-    final ra = a.driverRating ?? 0;
-    final rb = b.driverRating ?? 0;
-    if (rb > ra) return b;
-    if (ra > rb) return a;
-    return a.departureTime.isBefore(b.departureTime) ? a : b;
   }
 
   void applyBrowseFilters({
@@ -199,6 +252,8 @@ class SearchProvider extends ChangeNotifier {
     final hi = priceMax.clamp(browsePriceSliderMin, browsePriceSliderMax);
     _browsePriceFilterMin = lo <= hi ? lo : hi;
     _browsePriceFilterMax = lo <= hi ? hi : lo;
+    _browseMaxPriceQuery = _browsePriceFilterMax;
+    loadBrowseDrivers();
     notifyListeners();
   }
 
@@ -209,6 +264,8 @@ class SearchProvider extends ChangeNotifier {
     _browseMinRating = null;
     _browsePriceFilterMin = browsePriceSliderMin;
     _browsePriceFilterMax = browsePriceSliderMax;
+    _browseMaxPriceQuery = null;
+    loadBrowseDrivers();
     notifyListeners();
   }
 
@@ -258,12 +315,8 @@ class SearchProvider extends ChangeNotifier {
           if (dLng != null) 'destLng': dLng,
         },
       );
-      final list = response.data as List?;
-      if (list != null) {
-        _searchResults = list
-            .map((e) => TripModel.fromJson(e as Map<String, dynamic>))
-            .toList();
-      }
+      final tripMaps = _extractTripMaps(response.data);
+      _searchResults = tripMaps.map(TripModel.fromJson).toList();
       _error = null;
     } catch (e) {
       debugPrint('Search failed: $e');

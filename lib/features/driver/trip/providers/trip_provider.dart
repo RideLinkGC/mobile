@@ -86,6 +86,9 @@ class TripProvider extends ChangeNotifier {
   ];
 
   static final _mockTrips = _mockTripCatalog;
+  static final RegExp _uuidV4Like = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
+  );
 
   TripProvider(this._apiClient, this._storage);
 
@@ -212,6 +215,46 @@ class TripProvider extends ChangeNotifier {
     return fallback;
   }
 
+  List<Map<String, dynamic>> _extractBookingMaps(dynamic data) {
+    if (data is List) {
+      return data.whereType<Map<String, dynamic>>().toList();
+    }
+    if (data is Map<String, dynamic>) {
+      final bookings = data['bookings'];
+      if (bookings is List) {
+        return bookings.whereType<Map<String, dynamic>>().toList();
+      }
+      final items = data['items'];
+      if (items is List) {
+        return items.whereType<Map<String, dynamic>>().toList();
+      }
+      final nested = data['data'];
+      if (nested is List) {
+        return nested.whereType<Map<String, dynamic>>().toList();
+      }
+      if (nested is Map<String, dynamic>) {
+        final nestedBookings = nested['bookings'];
+        if (nestedBookings is List) {
+          return nestedBookings.whereType<Map<String, dynamic>>().toList();
+        }
+      }
+    }
+    return const [];
+  }
+
+  String _formatIsoZuluFromSelectedLocalClock(DateTime dateTime) {
+    final zulu = DateTime.utc(
+      dateTime.year,
+      dateTime.month,
+      dateTime.day,
+      dateTime.hour,
+      dateTime.minute,
+      dateTime.second,
+      dateTime.millisecond,
+    );
+    return zulu.toIso8601String();
+  }
+
   Future<String?> createTrip({
     String? driverId,
     required String origin,
@@ -226,6 +269,14 @@ class TripProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
+    final trimmedDriverId = driverId?.trim();
+    if (trimmedDriverId == null || !_uuidV4Like.hasMatch(trimmedDriverId)) {
+      _error = 'Invalid driver profile. Please sign in again as a driver.';
+      _loading = false;
+      notifyListeners();
+      return null;
+    }
+
     try {
       final resolvedDriverId = driverId ?? await _storage.getDriverId();
       if (resolvedDriverId == null || resolvedDriverId.isEmpty) {
@@ -235,12 +286,14 @@ class TripProvider extends ChangeNotifier {
         return null;
       }
       final response = await _apiClient.post(ApiEndpoints.trips, data: {
-        'driverId': resolvedDriverId,
+        'driverId': trimmedDriverId,
         'origin': origin,
         'destination': destination,
         'routeCoordinates': routeCoordinates,
         'distanceKm': distanceKm,
-        'departureTime': departureTime.toIso8601String(),
+        // Backend expects strict ISO datetime; send Zulu ISO while preserving
+        // selected local clock components (e.g. 06:51 -> 06:51Z).
+        'departureTime': _formatIsoZuluFromSelectedLocalClock(departureTime),
         'availableSeats': availableSeats,
         'pricePerSeat': pricePerSeat,
       });
@@ -324,6 +377,25 @@ class TripProvider extends ChangeNotifier {
       debugPrint('Failed to load trip bookings: $e');
     }
     return [];
+  }
+
+  /// Loads all bookings for the signed-in passenger profile.
+  Future<List<BookingModel>> loadPassengerBookings() async {
+    try {
+      final passengerId = await _storage.getPassengerId();
+      if (passengerId == null || passengerId.trim().isEmpty) {
+        return const [];
+      }
+
+      final response =
+          await _apiClient.get(ApiEndpoints.passengerBookings(passengerId));
+      final bookingMaps = _extractBookingMaps(response.data);
+      if (bookingMaps.isEmpty) return const [];
+      return bookingMaps.map(BookingModel.fromJson).toList();
+    } catch (e) {
+      debugPrint('Failed to load passenger bookings: $e');
+      return const [];
+    }
   }
 
   Future<bool> updateTrip(String tripId, Map<String, dynamic> data) async {

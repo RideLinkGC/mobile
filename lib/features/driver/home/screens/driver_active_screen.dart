@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:gebeta_gl/gebeta_gl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:ridelink/features/driver/common/driver_app_bar.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 
 import '../../../../core/constants/app_constants.dart';
@@ -31,7 +32,28 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
       GlobalKey<GebetaMapWidgetState>();
 
   LatLng? _userLocation;
-  TripModel? _activeTrip;
+  TripModel? _activeTrip = TripModel(
+    id: '1',
+    origin: 'Bole, Airport Main Gate Area',
+    destination: 'Kazanchis, Inter Luxury Hotel Hub',
+    routeCoordinates: const [
+      RouteCoordinate(lat: 9.0192, lng: 38.7525),
+      RouteCoordinate(lat: 9.0300, lng: 38.7800),
+    ],
+    driverName: 'Abebe Kebede',
+    driverRating: 4.8,
+    vehicleModel: 'Silver Toyota Corolla',
+    vehiclePlate: 'AA-3-45231',
+    vehicleSeats: 4,
+    bookedSeats: 1,
+    distanceKm: 11.2,
+    departureTime: DateTime.now(),
+    status: TripStatus.inProgress,
+    driverId: '1',
+    availableSeats: 4,
+    pricePerSeat: 100,
+  );
+  
   RouteResult? _directionRoute;
 
   @override
@@ -111,7 +133,27 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
     if (state == null) return;
 
     final points = <LatLng>[];
-    final trip = _activeTrip;
+    final trip = TripModel(
+    id: '1',
+    origin: 'Bole, Airport Main Gate Area',
+    destination: 'Kazanchis, Inter Luxury Hotel Hub',
+    routeCoordinates: const [
+      RouteCoordinate(lat: 9.0192, lng: 38.7525),
+      RouteCoordinate(lat: 9.0300, lng: 38.7800),
+    ],
+    driverName: 'Abebe Kebede',
+    driverRating: 4.8,
+    vehicleModel: 'Silver Toyota Corolla',
+    vehiclePlate: 'AA-3-45231',
+    vehicleSeats: 4,
+    bookedSeats: 1,
+    distanceKm: 11.2,
+    departureTime: DateTime.now(),
+    status: TripStatus.inProgress,
+    driverId: '1',
+    availableSeats: 4,
+    pricePerSeat: 100,
+  );
     final rr = _directionRoute;
 
     if (rr != null && rr.polylinePoints.length >= 2) {
@@ -151,7 +193,27 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
     final scheme = theme.colorScheme;
     final tripProvider = context.watch<TripProvider>();
 
-    final trip = _activeTrip;
+    final trip = TripModel(
+    id: '1',
+    origin: 'Bole, Airport Main Gate Area',
+    destination: 'Kazanchis, Inter Luxury Hotel Hub',
+    routeCoordinates: const [
+      RouteCoordinate(lat: 9.0192, lng: 38.7525),
+      RouteCoordinate(lat: 9.0300, lng: 38.7800),
+    ],
+    driverName: 'Abebe Kebede',
+    driverRating: 4.8,
+    vehicleModel: 'Silver Toyota Corolla',
+    vehiclePlate: 'AA-3-45231',
+    vehicleSeats: 4,
+    bookedSeats: 1,
+    distanceKm: 11.2,
+    departureTime: DateTime.now(),
+    status: TripStatus.inProgress,
+    driverId: '1',
+    availableSeats: 4,
+    pricePerSeat: 100,
+  );
     final rr = _directionRoute;
     final etaMinutes = rr != null && rr.durationMinutes > 0
         ? rr.durationMinutes.round().clamp(1, 24 * 60)
@@ -162,11 +224,7 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
     final mapHeight = screenH * _kMapHeightFraction;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: const ShellMenuButton(),
-        title: Text(l10n.activeTrip),
-        centerTitle: true,
-      ),
+        appBar: driverAppBarWitDrawer(context, l10n.activeTrip, true),
       backgroundColor: theme.brightness == Brightness.dark
           ? AppColors.darkBackground
           : scheme.surface,
@@ -181,6 +239,7 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
               child: const Icon(Icons.emergency_rounded),
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      
       body: RefreshIndicator(
         color: AppColors.primary,
         edgeOffset: mapHeight * 0.5,
@@ -189,6 +248,7 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(
+              
               child: SizedBox(
                 height: mapHeight,
                 width: double.infinity,

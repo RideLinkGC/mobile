@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:ridelink/features/driver/common/driver_app_bar.dart';
+import 'package:ridelink/features/passenger/common/app_bar.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/enums.dart';
@@ -175,7 +177,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
 
     if (isLoading) {
       return Scaffold(
-        appBar: AppBar(title: Text(l10n.tripSchedule)),
+        appBar: AppBar(
+          title: Text(l10n.tripSchedule)
+          ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -201,7 +205,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
 
     if (trip == null) {
       return Scaffold(
-        appBar: AppBar(title: Text(l10n.tripSchedule)),
+        appBar: driverAppBarWitDrawer(context, l10n.tripSchedule, false),
         body: const Center(child: Text('Select a trip to view details')),
       );
     }
@@ -218,6 +222,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     final distanceKm = rr != null && rr.distanceKm > 0 ? rr.distanceKm : null;
 
     return Scaffold(
+        appBar: driverAppBarWitDrawer(context, l10n.tripSchedule, false),
       body: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -235,56 +240,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                     showUserLocation: false,
                     interactive: true,
                   ),
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.55),
-                            Colors.black.withValues(alpha: 0.08),
-                          ],
-                        ),
-                      ),
-                      child: SafeArea(
-                        bottom: false,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor:
-                                    Theme.of(context).scaffoldBackgroundColor,
-                                child: IconButton(
-                                  icon: const Icon(Icons.arrow_back),
-                                  onPressed: () => context.pop(),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  l10n.tripSchedule,
-                                  textAlign: TextAlign.center,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                ),
-                              ),
-                              const SizedBox(width: 52),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                 
                 ],
               ),
             ),
@@ -474,7 +430,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     return '$title (${booking.seatsBooked} seat${booking.seatsBooked > 1 ? 's' : ''})';
   }
 
-  List<MapMarker> _buildMapMarkers(dynamic trip) {
+  List<MapMarker> _buildMapMarkers(TripModel trip) {
     final markers = <MapMarker>[];
     if (trip.routeCoordinates.isNotEmpty) {
       markers.add(MapMarker(
@@ -489,15 +445,21 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     return markers;
   }
 
-  List<MapPolyline> _buildMapPolylines(dynamic trip) {
+  List<MapPolyline> _buildMapPolylines(TripModel trip) {
     final rr = _directionRoute;
     if (rr != null && rr.polylinePoints.length >= 2) {
+      final routePoints = rr.polylinePoints
+          .where((p) => p.length >= 2)
+          .map<LatLng>((p) {
+            final lat = (p[0] as num).toDouble();
+            final lng = (p[1] as num).toDouble();
+            return LatLng(lat, lng);
+          })
+          .toList(growable: false);
+      if (routePoints.length < 2) return [];
       return [
         MapPolyline(
-          points: rr.polylinePoints
-              .where((p) => p.length >= 2)
-              .map((p) => LatLng(p[0], p[1]))
-              .toList(),
+          points: routePoints,
           color: AppColors.primaryMapHex,
           width: 4,
         ),
@@ -505,8 +467,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     }
     if (trip.routeCoordinates.isEmpty) return [];
     final points = trip.routeCoordinates
-        .map((c) => LatLng(c.lat, c.lng))
-        .toList();
+        .map<LatLng>((c) => LatLng(c.lat, c.lng))
+        .toList(growable: false);
     return [MapPolyline(points: points, color: AppColors.primaryMapHex, width: 4)];
   }
 }
