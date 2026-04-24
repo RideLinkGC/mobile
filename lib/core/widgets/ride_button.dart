@@ -27,22 +27,26 @@ class RideLinkButton extends StatelessWidget {
 
     return InkWell(
       onTap: onPressed,
-      child: Flexible(
-        child: Container(
-          width: MediaQuery.of(context).size.width,
-         decoration: BoxDecoration(
-            color: isOutlined?Theme.of(context).colorScheme.primary
-            :Theme.of(context).colorScheme.surface,
-        
-          ),
-          height: height,
-          child: isLoading?CircularProgressIndicator():
-          Text(text,style: TextStyle(
-            color: isOutlined?Theme.of(context).colorScheme.onPrimary:Theme.of(context).colorScheme.onSurface,
-        
-          ),)
-          ,
+      child: Container(
+        width: MediaQuery.of(context).size.width,
+       decoration: BoxDecoration(
+        border: BoxBorder.all(
+          color: foregroundColor??Colors.grey
         ),
+         borderRadius: BorderRadius.circular(15),
+          color: isOutlined? backgroundColor??Theme.of(context).colorScheme.primary:backgroundColor
+        
+      
+        ),
+        height: height,
+        child: isLoading?Center(child: CircularProgressIndicator()):
+        Center(
+          child: Text(text,style: TextStyle(
+            fontWeight: FontWeight.w500,
+            color: foregroundColor
+          ),),
+        )
+        ,
       ),
     );
 

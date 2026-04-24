@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:gebeta_gl/gebeta_gl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:ridelink/core/widgets/tab_view.dart';
 import 'package:ridelink/features/driver/common/driver_app_bar.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 
@@ -143,7 +144,7 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
       points.add(const LatLng(AppConstants.defaultLat, AppConstants.defaultLng));
     }
     if (_userLocation != null) points.add(_userLocation!);
-
+  
     var minLat = points.first.latitude;
     var maxLat = minLat;
     var minLng = points.first.longitude;
@@ -162,6 +163,8 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
       padding: 48,
     );
   }
+
+  int selectedTab=0;
 
   @override
   Widget build(BuildContext context) {
@@ -191,11 +194,8 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
     availableSeats: 4,
     pricePerSeat: 100,
   );
-    final rr = _directionRoute;
-    final etaMinutes = rr != null && rr.durationMinutes > 0
-        ? rr.durationMinutes.round().clamp(1, 24 * 60)
-        : null;
-    final distanceKm = rr != null && rr.distanceKm > 0 ? rr.distanceKm : null;
+    
+ 
 
     final screenH = MediaQuery.sizeOf(context).height;
     final mapHeight = screenH * _kMapHeightFraction;
@@ -205,9 +205,7 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
       backgroundColor: theme.brightness == Brightness.dark
           ? AppColors.darkBackground
           : scheme.surface,
-      floatingActionButton: trip == null
-          ? null
-          : FloatingActionButton(
+      floatingActionButton: FloatingActionButton(
               heroTag: 'driver_active_sos',
               tooltip: l10n.sos,
               onPressed: () => showEmergencyAlertFlow(context, trip.id),
@@ -245,8 +243,8 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
                       markers: _buildMarkers(trip, _userLocation),
                       polylines: _buildPolylines(trip, _directionRoute),
                       onTap: (_) {
-                        final id = trip?.id;
-                        if (id != null && id.isNotEmpty) {
+                        final id = trip.id;
+                        if (id.isNotEmpty) {
                           context.push('/tracking/$id');
                         }
                       },
@@ -258,84 +256,20 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
-                child: tripProvider.loading && trip == null
-                    ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.only(top: 18),
-                          child: CircularProgressIndicator(
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      )
-                    : trip == null
-                        ? _NoActiveTrip(
-                            onGoHome: () => context.go('/driver'),
-                          )
-                        : DriverCurrentTripCard(
-                            trip: trip,
-                            bookings: tripProvider.tripBookings,
-                            etaMinutes: etaMinutes,
-                            distanceKm: distanceKm,
-                            onOpen: () => context.push('/trip-detail/${trip.id}'),
-                            onOpenTracking: () =>
-                                context.push('/tracking/${trip.id}'),
-                            onRequests: () =>
-                                context.push('/booking-requests/${trip.id}'),
-                          ),
+                child: RideTabView(
+                  count: 3,
+                 labels: ["Trip Info","Passengers","Messages"], 
+                 selectedTab: selectedTab,
+                  onClick: (index){
+                    setState(() {
+                      selectedTab=index;
+                    });
+                  }),
+                      
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _NoActiveTrip extends StatelessWidget {
-  const _NoActiveTrip({required this.onGoHome});
-
-  final VoidCallback onGoHome;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.route_rounded, size: 64, color: AppColors.textHintLight),
-          const SizedBox(height: 14),
-          Text(
-            'No active trip',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Start a scheduled trip to see it here.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.brightness == Brightness.dark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.textSecondaryLight,
-            ),
-          ),
-          const SizedBox(height: 18),
-          FilledButton(
-            onPressed: onGoHome,
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            child: Text(l10n.home),
-          ),
-        ],
       ),
     );
   }

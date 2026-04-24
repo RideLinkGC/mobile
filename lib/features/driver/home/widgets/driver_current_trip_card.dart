@@ -260,9 +260,13 @@ class _ChipModern extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.2)),
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [BoxShadow(
+          color:  scheme.outlineVariant.withValues(alpha: 0.05),
+          blurRadius: 1,
+          spreadRadius: 1
+        )]
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -294,7 +298,7 @@ class _CountPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color:Colors.transparent,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(

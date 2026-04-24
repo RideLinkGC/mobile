@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:ridelink/core/widgets/ride_button.dart';
+import 'package:ridelink/core/widgets/tab_view.dart';
 import 'package:ridelink/features/driver/common/driver_app_bar.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
@@ -31,7 +32,7 @@ class TripDetailScreen extends StatefulWidget {
 class _TripDetailScreenState extends State<TripDetailScreen> {
   RouteResult? _directionRoute;
   final GlobalKey<GebetaMapWidgetState> _mapKey = GlobalKey<GebetaMapWidgetState>();
-
+  int selectedTab=0;
   @override
   void initState() {
     super.initState();
@@ -319,53 +320,57 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                   const SizedBox(height: 18),
                   Row(
                     children: [
-                       RideLinkButton(
-                      text: 'Start Trip',
-                      icon: Icons.play_arrow,
-                      onPressed: () => _handleUpdateStatus(TripStatus.inProgress),
+                        if (trip.status == TripStatus.scheduled) ...[
+                    Flexible(
+                      child: RideLinkButton(
+                        text: 'Start Trip',
+                        isOutlined: true,
+                        foregroundColor: Colors.white,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        icon: Icons.play_arrow,
+                        onPressed: () => _handleUpdateStatus(TripStatus.inProgress),
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    RideLinkButton(
-                      text: 'Complete Trip',
-                      icon: Icons.check_circle,
-                      onPressed: () => _handleUpdateStatus(TripStatus.completed),
-                    )
-                    ],
-                  ),
-                  if (trip.status == TripStatus.scheduled) ...[
-                    AppButton(
-                      text: 'Start Trip',
-                      icon: Icons.play_arrow,
-                      onPressed: () => _handleUpdateStatus(TripStatus.inProgress),
-                    ),
-                    const SizedBox(height: 10),
+                    const SizedBox(width: 15),
                   ],
                   if (trip.status == TripStatus.inProgress) ...[
-                    AppButton(
-                      text: 'Complete Trip',
-                      icon: Icons.check_circle,
-                      onPressed: () => _handleUpdateStatus(TripStatus.completed),
+                    Flexible(
+                      child: RideLinkButton(
+                        text: 'Complete Trip',
+                        icon: Icons.check_circle,
+                        isOutlined: true,
+                        onPressed: () => _handleUpdateStatus(TripStatus.completed),
+                      ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(width: 15),
                   ],
                   if (trip.status == TripStatus.scheduled ||
                       trip.status == TripStatus.inProgress) ...[
                     
-                    AppButton(
-                      text: 'Cancel Trip',
-                      icon: Icons.cancel_outlined,
-                      isOutlined: true,
-                      foregroundColor: AppColors.error,
-                      onPressed: () => _handleUpdateStatus(TripStatus.canceled),
+                    Flexible(
+                      child: RideLinkButton(
+                        text: 'Cancel Trip',
+                        icon: Icons.cancel_outlined,
+                        isOutlined: false,
+                        foregroundColor: AppColors.error,
+                        onPressed: () => _handleUpdateStatus(TripStatus.canceled),
+                      ),
                     ),
-                    const SizedBox(height: 18),
                   ],
-                  Text(
-                    'Confirmed Passengers',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                    ],
                   ),
+                   SizedBox(height: 35,),
+                  RideTabView(
+                    count: 2,
+                    labels: ["Passengers","Booking request"],
+                    selectedTab: selectedTab,
+                    onClick: (index){
+                      setState(() {
+                        selectedTab=index;
+                      });
+                    },
+                  ),
+                 
                   const SizedBox(height: 12),
                 ],
               ),
@@ -593,7 +598,7 @@ class _StatusChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.2),
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
