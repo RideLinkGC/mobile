@@ -43,133 +43,137 @@ class DriverCurrentTripCard extends StatelessWidget {
     final eta = (etaMinutes != null && etaMinutes! > 0) ? '${etaMinutes!} min' : '-- min';
     final dist = (distanceKm != null && distanceKm! > 0) ? '${distanceKm!.toStringAsFixed(1)} ${l10n.km}' : '-- ${l10n.km}';
 
-    return Container(
-  decoration: BoxDecoration(
-    borderRadius: BorderRadius.circular(20),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.06),
-        blurRadius: 20,
-        offset: const Offset(0, 10),
-      ),
-    ],
-  ),
-  child: ClipRRect(
-    borderRadius: BorderRadius.circular(20),
-    child: Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            scheme.surface,
-            scheme.surfaceContainerHighest.withValues(alpha: 0.4),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return InkWell(
+      borderRadius: BorderRadius.circular(15),
+      onTap: (){},
+      splashColor: Theme.of(context).primaryColor.withAlpha(100),
+      child: Container(
+        decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(20),
+      color: Theme.of(context).colorScheme.surface,
+      boxShadow: [
+        BoxShadow(
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(30),
+          blurRadius: 2,
+          spreadRadius: 1
         ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-            /// 🔥 HEADER (Route + Status)
-            Row(
+      ],
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              colors: [
+                scheme.surface,
+                scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    "Active trips",
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: const Color.fromRGBO(12, 207, 237, 1),
-                      fontWeight: FontWeight.bold,
+        
+                /// 🔥 HEADER (Route + Status)
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "Active trips",
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: const Color.fromRGBO(12, 207, 237, 1),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
+                    // _StatusBadge(status: trip.status),
+                  ],
+                ),
+        
+                const SizedBox(height: 14),
+        
+                /// 📍 ROUTE VISUAL
+                _RouteSection(
+                  origin: trip.origin,
+                  destination: trip.destination,
+                ),
+        
+                const SizedBox(height: 16),
+        
+                /// 📊 INFO CHIPS
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _ChipModern(
+                      label: timeFmt.format(trip.departureTime),
+                      icon: Icons.schedule,
+                    ),
+                    _ChipModern(
+                      label: eta,
+                      icon: Icons.timelapse_rounded,
+                    ),
+                    _ChipModern(
+                      label: dist,
+                      icon: Icons.route_rounded,
+                    ),
+                    _ChipModern(
+                      label: '${trip.seatsLeft}/${trip.availableSeats}',
+                      icon: Icons.event_seat_outlined,
+                    ),
+                  ],
+                ),
+        
+                const SizedBox(height: 16),
+        
+                /// 📈 BOOKINGS + PRICE
+                Row(
+                  children: [
+                    _CountPill(
+                      label: 'Confirmed',
+                      value: confirmed.toString(),
+                      color: AppColors.success,
+                    ),
+                    const SizedBox(width: 8),
+                    _CountPill(
+                      label: 'Pending',
+                      value: pending.toString(),
+                      color: AppColors.warning,
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${trip.pricePerSeat.toStringAsFixed(0)} ${l10n.etb}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+        
+                const SizedBox(height: 18),
+        
+                /// 🚀 ACTION BUTTON
+                _buildActionButton(context),
+        
+                if (onRequests != null) ...[
+                  const SizedBox(height: 10),
+                  AppButton(
+                    text: l10n.bookingRequests,
+                    icon: Icons.person_add_alt_1_outlined,
+                    onPressed: onRequests,
+                    isOutlined: true,
                   ),
-                ),
-                // _StatusBadge(status: trip.status),
+                ],
               ],
             ),
-
-            const SizedBox(height: 14),
-
-            /// 📍 ROUTE VISUAL
-            _RouteSection(
-              origin: trip.origin,
-              destination: trip.destination,
-            ),
-
-            const SizedBox(height: 16),
-
-            /// 📊 INFO CHIPS
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _ChipModern(
-                  label: timeFmt.format(trip.departureTime),
-                  icon: Icons.schedule,
-                ),
-                _ChipModern(
-                  label: eta,
-                  icon: Icons.timelapse_rounded,
-                ),
-                _ChipModern(
-                  label: dist,
-                  icon: Icons.route_rounded,
-                ),
-                _ChipModern(
-                  label: '${trip.seatsLeft}/${trip.availableSeats}',
-                  icon: Icons.event_seat_outlined,
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            /// 📈 BOOKINGS + PRICE
-            Row(
-              children: [
-                _CountPill(
-                  label: 'Confirmed',
-                  value: confirmed.toString(),
-                  color: AppColors.success,
-                ),
-                const SizedBox(width: 8),
-                _CountPill(
-                  label: 'Pending',
-                  value: pending.toString(),
-                  color: AppColors.warning,
-                ),
-                const Spacer(),
-                Text(
-                  '${trip.pricePerSeat.toStringAsFixed(0)} ${l10n.etb}',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 18),
-
-            /// 🚀 ACTION BUTTON
-            _buildActionButton(context),
-
-            if (onRequests != null) ...[
-              const SizedBox(height: 10),
-              AppButton(
-                text: l10n.bookingRequests,
-                icon: Icons.person_add_alt_1_outlined,
-                onPressed: onRequests,
-                isOutlined: true,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
-    ),
-  ),
-); 
+    ); 
     }
 
     Widget _buildActionButton(BuildContext context) {
