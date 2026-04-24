@@ -467,13 +467,14 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get profilePersonalDetailsSubtitle =>
-      'ለቦታ ማስያዣ እና ደህንነት የሚጠቀሙት የመለያ መረጃዎች።';
+      'ለጉዞ ማስያዣ እና ለደህንነት የሚጠቅሙ የመለያ መረጃዎች።';
 
   @override
   String get profileDriverDetailsTitle => 'የአሽከርካሪ ዝርዝሮች';
 
   @override
-  String get profileDriverDetailsSubtitle => 'ተሳፋሪዎች ሲያስይዙ የሚያዩት የተሽከርካሪ መረጃ።';
+  String get profileDriverDetailsSubtitle =>
+      'ተሳፋሪዎች ጉዞ ሲያስይዙ የሚያዩት የተሽከርካሪ መረጃ።';
 
   @override
   String get profileQuickActionsTitle => 'ፈጣን እርምጃዎች';
@@ -534,7 +535,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get profileVehicleInformationSubtitle =>
-      'ተሳፋሪዎች በመመንጨት ይተማመኑ ዘንድ እነዚህን ዝርዝሮች ዘመናዊ ያድርጉ።';
+      'ተሳፋሪዎች እንዲተማመኑ እነዚህን ዝርዝሮች ወቅታዊ ያድርጉ።';
 
   @override
   String get profileSaving => 'በማስቀመጥ ላይ...';

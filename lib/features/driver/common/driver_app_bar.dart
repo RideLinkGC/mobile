@@ -11,6 +11,9 @@ import 'package:ridelink/core/widgets/shell_drawer_scope.dart';
       title: Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white)),
       backgroundColor: Colors.blue,
       centerTitle: true,
+      iconTheme: IconTheme.of(context).copyWith(
+        color: Colors.white
+      ),
       actions: [
         IconButton(
           icon: Icon(Icons.notifications_rounded,

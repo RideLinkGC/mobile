@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:ridelink/features/driver/common/driver_app_bar.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import '../../../../core/constants/enums.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -108,9 +109,7 @@ class _BookingRequestsScreenState extends State<BookingRequestsScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.bookingRequests),
-      ),
+      appBar: driverAppBarWitDrawer(context, l10n.bookingRequests, false),
       body: RefreshIndicator(
         onRefresh: () => context.read<TripProvider>().loadTripBookings(widget.tripId),
         child: ListView.builder(

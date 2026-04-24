@@ -465,35 +465,35 @@ class AppLocalizationsOm extends AppLocalizations {
 
   @override
   String get profileActivityManageAlerts =>
-      'Akeekkachiisota keessaa menu herregaa keetiin bulchi';
+      'Akeekkachiisota menu herregaa keetii keessaa bulchi';
 
   @override
-  String get profilePersonalDetailsTitle => 'Bal\'ina dhuunfaa';
+  String get profilePersonalDetailsTitle => 'Odeeffannoo dhuunfaa';
 
   @override
   String get profilePersonalDetailsSubtitle =>
-      'Odeeffannoo herregaa kee kan qabuu, nageenyaa fi qabduu teessoo irratti fayyadamu.';
+      'Odeeffannoo herregaa kee, kan qabduu teessoo fi nageenyaaf fayyadamu.';
 
   @override
-  String get profileDriverDetailsTitle => 'Bal\'ina konkolaachisaa';
+  String get profileDriverDetailsTitle => 'Odeeffannoo konkolaachisaa';
 
   @override
   String get profileDriverDetailsSubtitle =>
       'Odeeffannoo konkolaataa yeroo imaltoonni qabatan mul\'atu.';
 
   @override
-  String get profileQuickActionsTitle => 'Gocha ariifachiisaa';
+  String get profileQuickActionsTitle => 'Gochoota saffisaa';
 
   @override
   String get profileQuickActionsSubtitle =>
-      'Gochoota fi filannoowwan herregaa yeroo baayyee itti fayyadamtan.';
+      'Gochootaa fi filannoowwan herregaa yeroo baayyee itti fayyadamtu.';
 
   @override
   String get profileRecentActivityTitle => 'Sochii dhihoo';
 
   @override
   String get profileRecentActivitySubtitle =>
-      'Mul\'ata gabaabaa sochii herregaa kee dhiyoo.';
+      'Sochii herregaa kee dhihoo irratti mul\'ata gabaabaa.';
 
   @override
   String get profileNoActivityTitle => 'Ammaaf sochiin hin jiru';
@@ -503,7 +503,7 @@ class AppLocalizationsOm extends AppLocalizations {
       'Yeroo imala qabattu ykn seenaa kee haaromsitu, haaromsi asitti mul\'ata.';
 
   @override
-  String get profileCompletionLabel => 'Guutinsa seenaa';
+  String get profileCompletionLabel => 'Guutinsa piroofaayilii';
 
   @override
   String get profileRoleLabel => 'Gahee';
@@ -522,10 +522,10 @@ class AppLocalizationsOm extends AppLocalizations {
 
   @override
   String get profileEditSubtitle =>
-      'Bal\'ina dhuunfaa fi odeeffannoo eenyummaa imalaa kee haaromsi.';
+      'Odeeffannoo dhuunfaa fi eenyummaa imalaa kee haaromsi.';
 
   @override
-  String get profilePhotoUploadPreview => 'Durargii olkaa\'uu suuraa';
+  String get profilePhotoUploadPreview => 'Durargii olkaa\'insa suuraa';
 
   @override
   String get profilePhotoSyncingNote =>
@@ -543,7 +543,7 @@ class AppLocalizationsOm extends AppLocalizations {
 
   @override
   String get profileVehicleInformationSubtitle =>
-      'Imaltoonni akka amananiif bal\'ina kana yeroo yeroon haaromsi.';
+      'Imaltoonni akka amananiif odeeffannoo kana yeroo yeroon haaromsi.';
 
   @override
   String get profileSaving => 'Olkaa\'aa jira...';

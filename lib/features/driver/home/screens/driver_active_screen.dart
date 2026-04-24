@@ -13,7 +13,6 @@ import '../../../../core/services/gebeta_maps_service.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/gebeta_map_widget.dart';
-import '../../../../core/widgets/shell_drawer_scope.dart';
 import '../../../emergency/widgets/emergency_alert_sheet.dart';
 import '../../trip/providers/trip_provider.dart';
 import '../widgets/driver_current_trip_card.dart';
@@ -32,27 +31,6 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
       GlobalKey<GebetaMapWidgetState>();
 
   LatLng? _userLocation;
-  TripModel? _activeTrip = TripModel(
-    id: '1',
-    origin: 'Bole, Airport Main Gate Area',
-    destination: 'Kazanchis, Inter Luxury Hotel Hub',
-    routeCoordinates: const [
-      RouteCoordinate(lat: 9.0192, lng: 38.7525),
-      RouteCoordinate(lat: 9.0300, lng: 38.7800),
-    ],
-    driverName: 'Abebe Kebede',
-    driverRating: 4.8,
-    vehicleModel: 'Silver Toyota Corolla',
-    vehiclePlate: 'AA-3-45231',
-    vehicleSeats: 4,
-    bookedSeats: 1,
-    distanceKm: 11.2,
-    departureTime: DateTime.now(),
-    status: TripStatus.inProgress,
-    driverId: '1',
-    availableSeats: 4,
-    pricePerSeat: 100,
-  );
   
   RouteResult? _directionRoute;
 
@@ -83,7 +61,6 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
     if (!mounted) return;
     final active = _pickActiveTrip(tripProvider.driverTrips);
     setState(() {
-      _activeTrip = active;
       _directionRoute = null;
     });
 
@@ -160,7 +137,7 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
       for (final p in rr.polylinePoints) {
         if (p.length >= 2) points.add(LatLng(p[0], p[1]));
       }
-    } else if (trip != null && trip.routeCoordinates.length >= 2) {
+    } else if (trip.routeCoordinates.length >= 2) {
       points.addAll(trip.routeCoordinates.map((c) => LatLng(c.lat, c.lng)));
     } else {
       points.add(const LatLng(AppConstants.defaultLat, AppConstants.defaultLng));

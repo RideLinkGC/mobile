@@ -3,8 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:ridelink/core/widgets/ride_button.dart';
 import 'package:ridelink/features/driver/common/driver_app_bar.dart';
-import 'package:ridelink/features/passenger/common/app_bar.dart';
 import 'package:ridelink/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/enums.dart';
@@ -261,7 +261,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         Text(
                           '${trip.origin} → ${trip.destination}',
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w500,
                               ),
                         ),
                         const SizedBox(height: 12),
@@ -317,6 +317,21 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 18),
+                  Row(
+                    children: [
+                       RideLinkButton(
+                      text: 'Start Trip',
+                      icon: Icons.play_arrow,
+                      onPressed: () => _handleUpdateStatus(TripStatus.inProgress),
+                    ),
+                    const SizedBox(height: 10),
+                    RideLinkButton(
+                      text: 'Complete Trip',
+                      icon: Icons.check_circle,
+                      onPressed: () => _handleUpdateStatus(TripStatus.completed),
+                    )
+                    ],
+                  ),
                   if (trip.status == TripStatus.scheduled) ...[
                     AppButton(
                       text: 'Start Trip',
@@ -335,13 +350,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                   ],
                   if (trip.status == TripStatus.scheduled ||
                       trip.status == TripStatus.inProgress) ...[
-                    AppButton(
-                      text: l10n.bookingRequests,
-                      icon: Icons.person_add_outlined,
-                      isOutlined: true,
-                      onPressed: () => context.push('/booking-requests/${trip.id}'),
-                    ),
-                    const SizedBox(height: 10),
+                    
                     AppButton(
                       text: 'Cancel Trip',
                       icon: Icons.cancel_outlined,
@@ -397,7 +406,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${booking.pickUpPoint ?? '—'} → ${booking.dropOffPoint ?? '—'}',
+                                  '${booking.pickUpPoint ?? '—\n'} → ${booking.dropOffPoint ?? '—'}',
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                         color: AppColors.textSecondaryLight,
                                       ),
@@ -485,21 +494,25 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.85),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.surface.withValues(alpha: 0.1),
+            blurRadius: 1,
+            spreadRadius: 1
+          )
+        ],
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.35),
-        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: scheme.onSurfaceVariant),
+          Icon(icon, size: 16, color:Colors.grey),
           const SizedBox(width: 6),
           Text(
             label,
             style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w400,
             ),
           ),
         ],
@@ -520,7 +533,7 @@ class _Pill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(

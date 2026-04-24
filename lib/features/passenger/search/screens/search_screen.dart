@@ -407,8 +407,8 @@ class _SearchScreenState extends State<SearchScreen> {
                               trip: trip,
                               l10n: l10n,
                               showBestMatch: index == 0,
-                               onTap: () => context
-                                  .push('/driver-detail/${trip.id}'),
+                              onTap: () => context
+                                  .push('/passenger-trip-detail/${trip.id}'),
                             );
                           },
                         ),
@@ -486,7 +486,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 trip: trip,
                                 l10n: l10n,
                                 onTap: () => context
-                                    .push('/driver-detail/${trip.id}'),
+                                    .push('/passenger-trip-detail/${trip.id}'),
                               ),
                             );
                           },
@@ -567,12 +567,14 @@ class _PlanRideSheetState extends State<_PlanRideSheet> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 20),
+           
             LocationSearchField(
               hintText: widget.l10n.origin,
               prefixIcon: Icons.trip_origin,
               onPlaceSelected: (r) => setState(() => _origin = r),
             ),
             const SizedBox(height: 16),
+            
             LocationSearchField(
               hintText: widget.l10n.destination,
               prefixIcon: Icons.location_on,
@@ -593,10 +595,7 @@ class _PlanRideSheetState extends State<_PlanRideSheet> {
                 widget.onSearchPressed(_origin, _destination);
               },
             ),
-            TextButton(
-              onPressed: () => widget.onApplyOnly(_origin, _destination),
-              child: const Text('Save route only'),
-            ),
+           
             if (widget.routeHistory.isNotEmpty) ...[
               const SizedBox(height: 16),
               Row(

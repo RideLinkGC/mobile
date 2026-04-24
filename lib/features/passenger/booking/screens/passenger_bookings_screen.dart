@@ -149,7 +149,7 @@ class _PassengerBookingsScreenState extends State<PassengerBookingsScreen> {
               item: item,
               l10n: l10n,
               onCancel: () => _onCancel(item),
-              onTap: () => context.push('/driver-detail/${item.tripId}'),
+              onTap: () => context.push('/passenger-trip-detail/${item.tripId}'),
             ),
           ),
         )
@@ -172,7 +172,7 @@ class _PassengerBookingsScreenState extends State<PassengerBookingsScreen> {
             child: PassengerBookingListCard(
               item: item,
               l10n: l10n,
-              onTap: () => context.push('/driver-detail/${item.tripId}'),
+              onTap: () => context.push('/passenger-trip-detail/${item.tripId}'),
             ),
           ),
         )

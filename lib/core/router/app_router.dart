@@ -15,6 +15,7 @@ import '../../features/driver/home/screens/driver_active_screen.dart';
 import '../../features/passenger/search/screens/search_screen.dart';
 import '../../features/passenger/search/screens/search_results_screen.dart';
 import '../../features/passenger/search/screens/driver_detail_screen.dart';
+import '../../features/passenger/search/screens/trip_details_screen.dart';
 import '../../features/passenger/booking/screens/booking_confirm_screen.dart';
 import '../../features/passenger/booking/screens/active_booking_screen.dart';
 import '../../features/driver/trip/screens/create_trip_screen.dart';
@@ -179,6 +180,12 @@ class AppRouter {
         GoRoute(
           path: '/driver-detail/:tripId',
           builder: (context, state) => DriverDetailScreen(
+            tripId: state.pathParameters['tripId']!,
+          ),
+        ),
+        GoRoute(
+          path: '/passenger-trip-detail/:tripId',
+          builder: (context, state) => TripDetailsScreen(
             tripId: state.pathParameters['tripId']!,
           ),
         ),

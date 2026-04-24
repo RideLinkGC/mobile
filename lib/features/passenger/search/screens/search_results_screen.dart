@@ -166,7 +166,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                               l10n: l10n,
                               isRecommended: isTop,
                               onTap: () =>
-                                  context.push('/driver-detail/${trip.id}'),
+                                  context.push('/passenger-trip-detail/${trip.id}'),
                             ),
                           );
                         },

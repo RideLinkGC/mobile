@@ -44,8 +44,24 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
 
   int _seats = 1;
   _BookingRecurrence _recurrence = _BookingRecurrence.oneTime;
+  final Set<int> _selectedWeekdays = <int>{};
+  final Set<String> _selectedDaySessions = <String>{};
 
   static const int _platformFee = 5;
+  static const List<(int, String)> _availableWeekdays = [
+    (DateTime.monday, 'Monday'),
+    (DateTime.tuesday, 'Tuesday'),
+    (DateTime.wednesday, 'Wednesday'),
+    (DateTime.thursday, 'Thursday'),
+    (DateTime.friday, 'Friday'),
+    (DateTime.saturday, 'Saturday'),
+    (DateTime.sunday, 'Sunday'),
+  ];
+  static const List<(String, String)> _availableDaySessions = [
+    ('morning', 'Morning trip'),
+    ('lunch', 'Lunch time trip'),
+    ('afternoon', 'Afternoon trip'),
+  ];
 
   List<MapMarker> get _markers {
     final pickup = _pickupResult != null
@@ -82,6 +98,27 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
         );
       }
       return;
+    }
+    final supportsSubscription = trip.seriesId != null;
+    if (supportsSubscription && _recurrence != _BookingRecurrence.oneTime) {
+      if (_selectedWeekdays.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Select at least one weekday for this subscription'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+      if (_selectedDaySessions.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Select at least one day session for this subscription'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
     }
 
     final passengerId = await storageService.getPassengerId();
@@ -180,6 +217,13 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
         maxSeats < 1 ? 0.0 : trip.pricePerSeat * seatsForPrice;
     final total = maxSeats < 1 ? 0.0 : subtotal + _platformFee;
     final departureFormatted = DateFormat.jm().format(trip.departureTime);
+    final supportsSubscription = trip.seriesId != null;
+    if (!supportsSubscription && _recurrence != _BookingRecurrence.oneTime) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _recurrence = _BookingRecurrence.oneTime);
+      });
+    }
 
     if (maxSeats >= 1 && _seats > maxSeats) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -308,20 +352,37 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
                         value: _BookingRecurrence.oneTime,
                         label: Text(l10n.oneTimeTrip),
                       ),
-                      ButtonSegment(
-                        value: _BookingRecurrence.weekly,
-                        label: Text(l10n.weekly),
-                      ),
-                      ButtonSegment(
-                        value: _BookingRecurrence.monthly,
-                        label: Text(l10n.monthly),
-                      ),
+                      if (supportsSubscription)
+                        ButtonSegment(
+                          value: _BookingRecurrence.weekly,
+                          label: Text(l10n.weekly),
+                        ),
+                      if (supportsSubscription)
+                        ButtonSegment(
+                          value: _BookingRecurrence.monthly,
+                          label: Text(l10n.monthly),
+                        ),
                     ],
                     selected: {_recurrence},
                     onSelectionChanged: (next) {
-                      setState(() => _recurrence = next.first);
+                      setState(() {
+                        _recurrence = next.first;
+                        if (_recurrence == _BookingRecurrence.oneTime) {
+                          _selectedWeekdays.clear();
+                          _selectedDaySessions.clear();
+                        }
+                      });
                     },
                   ),
+                  if (!supportsSubscription) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      'This trip does not support subscriptions.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondaryLight,
+                          ),
+                    ),
+                  ],
                   if (_recurrence != _BookingRecurrence.oneTime) ...[
                     const SizedBox(height: 10),
                     Text(
@@ -329,6 +390,68 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondaryLight,
                           ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Select weekdays',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    GridView.builder(
+                      itemCount: _availableWeekdays.length,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 4,
+                        crossAxisSpacing: 8,
+                        childAspectRatio: 2.8,
+                      ),
+                      itemBuilder: (context, index) {
+                        final day = _availableWeekdays[index];
+                        return CheckboxListTile(
+                          value: _selectedWeekdays.contains(day.$1),
+                          onChanged: (checked) {
+                            setState(() {
+                              if (checked == true) {
+                                _selectedWeekdays.add(day.$1);
+                              } else {
+                                _selectedWeekdays.remove(day.$1);
+                              }
+                            });
+                          },
+                          title: Text(day.$2),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                          controlAffinity: ListTileControlAffinity.leading,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Select day sessions',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 6),
+                    ..._availableDaySessions.map(
+                      (session) => CheckboxListTile(
+                        value: _selectedDaySessions.contains(session.$1),
+                        onChanged: (checked) {
+                          setState(() {
+                            if (checked == true) {
+                              _selectedDaySessions.add(session.$1);
+                            } else {
+                              _selectedDaySessions.remove(session.$1);
+                            }
+                          });
+                        },
+                        title: Text(session.$2),
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        visualDensity: VisualDensity.compact,
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 20),

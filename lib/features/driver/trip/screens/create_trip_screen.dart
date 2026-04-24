@@ -40,6 +40,8 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
   bool _allowSubscriptions = false;
   bool _isLoading = false;
   bool _pickingOrigin = true;
+  final Set<int> _selectedWeekdays = <int>{};
+  final Set<String> _selectedDailySlots = <String>{};
 
   final GlobalKey<GebetaMapWidgetState> _mapKey = GlobalKey();
   static const List<(int, int)> _commutingWindows = [
@@ -49,6 +51,20 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
   static final RegExp _uuidV4Like = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
   );
+  static const List<(int, String)> _availableWeekdays = [
+    (DateTime.monday, 'Monday'),
+    (DateTime.tuesday, 'Tuesday'),
+    (DateTime.wednesday, 'Wednesday'),
+    (DateTime.thursday, 'Thursday'),
+    (DateTime.friday, 'Friday'),
+    (DateTime.saturday, 'Saturday'),
+    (DateTime.sunday, 'Sunday'),
+  ];
+  static const List<(String, String)> _dailyTripSlots = [
+    ('morning', 'Morning trip'),
+    ('lunch', 'Lunch time trip'),
+    ('afternoon', 'Afternoon trip'),
+  ];
 
   @override
   void dispose() {
@@ -173,6 +189,26 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_allowSubscriptions) {
+      if (_selectedWeekdays.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Select at least one weekly day for subscriptions'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+      if (_selectedDailySlots.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Select at least one daily trip time for subscriptions'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+    }
     if (_originResult == null || _destinationResult == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -515,10 +551,81 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                       title: Text(l10n.subscription),
                       subtitle: const Text('Allow weekly/monthly subscriptions'),
                       value: _allowSubscriptions,
-                      onChanged: (v) => setState(() => _allowSubscriptions = v),
+                      onChanged: (v) => setState(() {
+                        _allowSubscriptions = v;
+                        if (!v) {
+                          _selectedWeekdays.clear();
+                          _selectedDailySlots.clear();
+                        }
+                      }),
                       contentPadding: EdgeInsets.zero,
                     ),
                     if (_allowSubscriptions) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Available weekdays',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      const SizedBox(height: 6),
+                      GridView.builder(
+                        itemCount: _availableWeekdays.length,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 4,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 2.9,
+                        ),
+                        itemBuilder: (context, index) {
+                          final day = _availableWeekdays[index];
+                          return CheckboxListTile(
+                            value: _selectedWeekdays.contains(day.$1),
+                            onChanged: (checked) {
+                              setState(() {
+                                if (checked == true) {
+                                  _selectedWeekdays.add(day.$1);
+                                } else {
+                                  _selectedWeekdays.remove(day.$1);
+                                }
+                              });
+                            },
+                            title: Text(day.$2),
+                            dense: true,
+                            visualDensity: VisualDensity.compact,
+                            contentPadding: EdgeInsets.zero,
+                            controlAffinity: ListTileControlAffinity.leading,
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Available daily trip times',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      const SizedBox(height: 6),
+                      ..._dailyTripSlots.map(
+                        (slot) => CheckboxListTile(
+                          value: _selectedDailySlots.contains(slot.$1),
+                          onChanged: (checked) {
+                            setState(() {
+                              if (checked == true) {
+                                _selectedDailySlots.add(slot.$1);
+                              } else {
+                                _selectedDailySlots.remove(slot.$1);
+                              }
+                            });
+                          },
+                          title: Text(slot.$2),
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       AppTextField(
                         controller: _weeklyPriceController,

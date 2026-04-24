@@ -34,6 +34,8 @@ class TripModel {
 
   // Nested driver info (included from backend joins)
   final String? driverName;
+  final String? driverEmail;
+  final String? driverPhone;
   final double? driverRating;
   final String? driverImage;
   final String? vehicleModel;
@@ -58,6 +60,8 @@ class TripModel {
     this.createdAt,
     this.updatedAt,
     this.driverName,
+    this.driverEmail,
+    this.driverPhone,
     this.driverRating,
     this.driverImage,
     this.vehicleModel,
@@ -99,6 +103,11 @@ class TripModel {
     if (json['_bookedSeats'] != null) {
       booked = json['_bookedSeats'] as int;
     }
+    final count = json['_count'] as Map<String, dynamic>?;
+    final countBookings = count?['bookings'];
+    if (booked == 0 && countBookings is int) {
+      booked = countBookings;
+    }
 
     return TripModel(
       id: json['id'] as String? ?? '',
@@ -121,6 +130,8 @@ class TripModel {
           ? DateTime.parse(json['updatedAt'] as String)
           : null,
       driverName: driverUser?['name'] as String?,
+      driverEmail: driverUser?['email'] as String?,
+      driverPhone: driverUser?['phone'] as String?,
       driverRating: (driverUser?['rating'] as num?)?.toDouble(),
       driverImage: driverUser?['image'] as String?,
       vehicleModel: driver?['vehicleModel'] as String?,

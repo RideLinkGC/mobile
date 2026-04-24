@@ -594,7 +594,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
                         item: item,
                         l10n: l10n,
                         onTap: () =>
-                            context.push('/driver-detail/${item.tripId}'),
+                            context.push('/passenger-trip-detail/${item.tripId}'),
                       ),
                     );
                   },

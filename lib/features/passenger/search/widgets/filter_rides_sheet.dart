@@ -121,7 +121,7 @@ class _FilterRidesSheetState extends State<FilterRidesSheet> {
                   'Filter Rides',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                       ),
                 ),
               ),
@@ -178,7 +178,11 @@ class _FilterRidesSheetState extends State<FilterRidesSheet> {
                       ),
                     ),
                     Switch(
+                      // change border of switch to primary color
+                      trackOutlineColor: WidgetStateProperty.all(scheme.primary.withValues(alpha: 0.35)),
                       value: _recommendedOnly,
+                      inactiveThumbColor: scheme.shadow.withValues(alpha: 0.35),
+                      inactiveTrackColor: scheme.surface,
                       activeThumbColor: scheme.primary,
                       activeTrackColor: scheme.primary.withValues(alpha: 0.35),
                       onChanged: (v) => setState(() => _recommendedOnly = v),
@@ -238,7 +242,7 @@ class _FilterRidesSheetState extends State<FilterRidesSheet> {
                     '${_priceRange.start.round()} — ${_priceRange.end.round()} ${l10n.etb}',
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                           color: scheme.primary,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                   ),
                 ],
@@ -251,7 +255,9 @@ class _FilterRidesSheetState extends State<FilterRidesSheet> {
                 divisions: 19,
                 activeColor: scheme.primary,
                 inactiveColor: onMuted.withValues(alpha: 0.25),
+                
                 labels: RangeLabels(
+
                   '${_priceRange.start.round()}',
                   '${_priceRange.end.round()}+',
                 ),
@@ -282,7 +288,7 @@ class _FilterRidesSheetState extends State<FilterRidesSheet> {
             20,
             8,
             20,
-            MediaQuery.paddingOf(context).bottom + 16,
+            MediaQuery.paddingOf(context).bottom + 30,
           ),
           child: FilledButton.icon(
             onPressed: _apply,
@@ -341,16 +347,16 @@ class _FilterRidesSheetState extends State<FilterRidesSheet> {
       label: Text(label),
       selected: selected,
       onSelected: (_) => setState(() => _sort = mode),
-      selectedColor: scheme.primary.withValues(alpha: 0.2),
+      selectedColor: Colors.transparent,
       checkmarkColor: scheme.primary,
-      backgroundColor: scheme.surfaceDim.withAlpha(125),
+      backgroundColor: Colors.transparent,
       labelStyle: TextStyle(
         color: selected ? scheme.primary : scheme.onSurface,
-        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        fontWeight: selected ? FontWeight.w500 : FontWeight.w400,
       ),
       side: BorderSide(
         color: selected ? scheme.primary : Colors.transparent,
-        width: selected ? 2 : 0,
+        width: selected ? 1 : 0,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     );
@@ -363,11 +369,11 @@ class _FilterRidesSheetState extends State<FilterRidesSheet> {
       label: Text(label),
       selected: selected,
       onSelected: (_) => setState(() => _minRating = value),
-      selectedColor: scheme.primary.withValues(alpha: 0.22),
+      selectedColor: Colors.transparent,
       checkmarkColor: scheme.primary,
-      backgroundColor: scheme.surfaceDim.withAlpha(125),
-      labelStyle: TextStyle(color: selected ? scheme.primary : scheme.onSurface, fontWeight: FontWeight.w600),
-      side: BorderSide(color: selected ? scheme.primary : Colors.transparent, width: selected ? 2 : 0),
+      backgroundColor: Colors.transparent,
+      labelStyle: TextStyle(color: selected ? scheme.primary : scheme.onSurface, fontWeight: FontWeight.w400),
+      side: BorderSide(color: selected ? scheme.primary : Colors.transparent, width: selected ? 1 : 0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     );
   }

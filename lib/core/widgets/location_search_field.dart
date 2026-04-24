@@ -245,11 +245,15 @@ class _LocationSearchFieldState extends State<LocationSearchField> {
                 runSpacing: 6,
                 children: _recentQueries.take(6).map((q) {
                   return ActionChip(
+                    backgroundColor: Colors.transparent,
+                    
                     label: Text(
                       q,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13),
+                      style:  TextStyle(fontSize: 13,
+                       color:Colors.grey
+                       ),
                     ),
                     visualDensity: VisualDensity.compact,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -257,7 +261,7 @@ class _LocationSearchFieldState extends State<LocationSearchField> {
                       _controller.text = q;
                       _onChanged(q);
                     },
-                    side: BorderSide(color: scheme.outlineVariant),
+                    side: BorderSide.none,
                   );
                 }).toList(),
               ),
