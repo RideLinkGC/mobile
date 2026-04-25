@@ -89,7 +89,8 @@ class _BookingRequestsScreenState extends State<BookingRequestsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final tripProvider = context.watch<TripProvider>();
-    final allBookings = tripProvider.tripBookings;
+    final allBookings =
+        tripProvider.tripBookings.where((b) => b.tripId == widget.tripId).toList();
     final pendingRequests =
         allBookings.where((b) => b.status == BookingStatus.pending).toList();
     final isLoading = tripProvider.loading && allBookings.isEmpty;

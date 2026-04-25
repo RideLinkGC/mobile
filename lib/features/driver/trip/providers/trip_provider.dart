@@ -363,20 +363,24 @@ class TripProvider extends ChangeNotifier {
   }
 
   Future<List<BookingModel>> loadTripBookings(String tripId) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
     try {
       final response = await _apiClient.get(ApiEndpoints.tripBookings(tripId));
-      final list = _extractList(response.data, keys: const ['bookings', 'items']);
-      if (list.isNotEmpty) {
-        _tripBookings = list
-            .map((e) => BookingModel.fromJson(e as Map<String, dynamic>))
-            .toList();
-        notifyListeners();
-        return _tripBookings;
-      }
+      final bookingMaps = _extractBookingMaps(response.data);
+      _tripBookings = bookingMaps.map(BookingModel.fromJson).toList();
+      _loading = false;
+      notifyListeners();
+      return _tripBookings;
     } catch (e) {
       debugPrint('Failed to load trip bookings: $e');
+      _error = _readError(e, fallback: 'Failed to load trip bookings');
     }
-    return [];
+    _tripBookings = [];
+    _loading = false;
+    notifyListeners();
+    return _tripBookings;
   }
 
   /// Loads all bookings for the signed-in passenger profile.

@@ -17,6 +17,7 @@ import '../../../../core/services/location_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/gebeta_map_widget.dart';
+import '../../../passenger/booking/models/booking_model.dart';
 import '../../../emergency/widgets/emergency_alert_sheet.dart';
 import '../../trip/providers/trip_provider.dart';
 
@@ -109,7 +110,7 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
   Future<void> _approveAllRequests(String tripId) async {
     final tripProvider = context.read<TripProvider>();
     final pending = tripProvider.tripBookings
-        .where((b) => b.status == BookingStatus.pending)
+        .where((b) => b.tripId == tripId && b.status == BookingStatus.pending)
         .toList(growable: false);
     for (final b in pending) {
       await tripProvider.acceptBooking(b.id);
@@ -177,7 +178,11 @@ class _DriverActiveScreenState extends State<DriverActiveScreen> {
     final tripProvider = context.watch<TripProvider>();
 
     final activeTrip = getActiveTrip(List<TripModel>.of(tripProvider.driverTrips));
-    final tripBookings = tripProvider.tripBookings;
+    final tripBookings = (activeTrip == null)
+        ? <BookingModel>[]
+        : tripProvider.tripBookings
+            .where((b) => b.tripId == activeTrip.id)
+            .toList();
     final approvedBookings =
         tripBookings.where((b) => b.status == BookingStatus.confirmed).toList();
     final timeFmt = DateFormat.jm();
@@ -838,8 +843,9 @@ class _SeatStatTile extends StatelessWidget {
 
   const _SeatStatTile({
     required this.label,
+    this.highlighted=false,
     required this.value,
-    this.highlighted = false,
+    
   });
 
   @override

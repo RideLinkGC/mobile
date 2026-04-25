@@ -7,7 +7,9 @@ import 'package:ridelink/core/widgets/shell_drawer_scope.dart';
     return AppBar(
       leading: hasDrawer ? ShellMenuButton(
         color: Colors.white,
-      ) : null,
+      ) : BackButton(
+        color: Colors.white,
+      ),
       title: Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white)),
       backgroundColor: Colors.blue,
       centerTitle: true,

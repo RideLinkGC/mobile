@@ -234,7 +234,10 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
     final tripProvider = context.watch<TripProvider>();
     final trip = tripProvider.selectedTrip;
-    final tripBookings = tripProvider.tripBookings;
+    final tripId = trip?.id ?? widget.tripId;
+    final tripBookings = tripProvider.tripBookings
+        .where((b) => tripId != null && tripId.isNotEmpty && b.tripId == tripId)
+        .toList();
     final isLoading = tripProvider.loading && trip == null && widget.tripId != null;
 
     if (isLoading) {

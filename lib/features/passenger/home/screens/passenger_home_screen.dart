@@ -18,9 +18,7 @@ import '../../../emergency/widgets/emergency_alert_sheet.dart';
 import '../../booking/models/booking_model.dart';
 import '../../booking/models/passenger_booking_list_item.dart';
 import '../../booking/widgets/passenger_booking_list_card.dart';
-
-/// In-progress trip shown on the map (matches mock catalog `t1` for tracking/SOS).
-const String _kCurrentTripId = 't1';
+import '../../../../core/utils/get_active_trip.dart';
 
 /// Map height as a fraction of full device height (see design: ~70%).
 const double _kMapHeightFraction = 0.7;
@@ -138,13 +136,9 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
   }
 
   Future<void> _loadCurrentTrip() async {
-    if (_activeTripModels.isNotEmpty) return;
-    final trip =
-        await context.read<TripProvider>().getTripById(_kCurrentTripId);
-    if (!mounted) return;
-    if (_activeTripModels.isNotEmpty) return;
-    setState(() => _currentTrip = trip);
-    await _loadDirectionRoute();
+    // Deprecated: current trip is resolved from passenger bookings in `_loadActiveTrips`.
+    // Keep method to avoid breaking call sites if referenced elsewhere.
+    if (_activeTripModels.isNotEmpty || _currentTrip != null) return;
   }
 
   Future<void> _loadDirectionRoute() async {
@@ -225,28 +219,35 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
     final bookings = await context.read<TripProvider>().loadPassengerBookings();
     if (!mounted) return;
 
-    final now = DateTime.now();
-    final activeTrips = bookings
-        .where((b) => b.status == BookingStatus.confirmed)
-        .where((b) => b.tripDepartureTime != null)
-        .where((b) => b.tripDepartureTime!.isAfter(now))
-        .toList()
-      ..sort((a, b) => a.tripDepartureTime!.compareTo(b.tripDepartureTime!));
+    final confirmed = bookings.where((b) => b.status == BookingStatus.confirmed).toList(growable: false);
 
-    final activeTripItems = activeTrips.map(_toActiveTripListItem).toList();
-    final activeTripModels = activeTrips.map(_toActiveTripModel).toList();
+    // Active list: confirmed bookings that are either ongoing (in-progress) OR
+    // upcoming (future departure time). This matches user expectations that
+    // "Active trips" isn't empty while a trip is currently happening.
+    
+
+    confirmed.sort((a, b) {
+      final aTime = a.tripDepartureTime ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = b.tripDepartureTime ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return aTime.compareTo(bTime);
+    });
+
+    final activeTripItems =
+        confirmed.map(_toActiveTripListItem).toList(growable: false);
+    final allTripModels = confirmed.map(_toActiveTripModel).toList(growable: false);
+
+    // Prefer in-progress; otherwise next upcoming scheduled.
+    final resolvedCurrentTrip = getActiveTrip(allTripModels);
 
     setState(() {
       _activeTrips = activeTripItems;
-      _activeTripModels = activeTripModels;
-      if (activeTripModels.isNotEmpty) {
-        _currentTrip = activeTripModels.first;
-      }
+      _activeTripModels = allTripModels;
+      _currentTrip = resolvedCurrentTrip;
       _activeTripsLoading = false;
       _activeTripsError =
           activeTripItems.isEmpty ? 'No active confirmed upcoming trips.' : null;
     });
-    if (activeTripModels.isNotEmpty) {
+    if (_currentTrip != null) {
       await _loadDirectionRoute();
     }
   }
@@ -282,19 +283,17 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
       availableSeats: booking.tripAvailableSeats ?? booking.seatsBooked,
       pricePerSeat: booking.tripPricePerSeat ??
           (booking.seatsBooked > 0 ? booking.totalPrice / booking.seatsBooked : 0),
-      status: TripStatus.scheduled,
+      status: booking.tripStatus ?? TripStatus.scheduled,
       driverName: booking.driverName ?? 'Driver',
       bookedSeats: booking.seatsBooked,
     );
   }
 
-  String get _currentTrackingTripId =>
-      _activeTripModels.isNotEmpty
-          ? _activeTripModels.first.id
-          : (_currentTrip?.id ?? _kCurrentTripId);
+  String? get _currentTrackingTripId => _currentTrip?.id;
 
   void _openLiveTracking(BuildContext context, {String? tripId}) {
     final selectedTripId = tripId ?? _currentTrackingTripId;
+    if (selectedTripId == null || selectedTripId.isEmpty) return;
     context.push('/tracking/$selectedTripId');
   }
 
@@ -363,22 +362,12 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final trip = _currentTrip?? TripModel(
-      id: 't1',
-      driverId: 'd1',
-      origin: 'Bole, Airport Main Gate',
-      destination: 'Megenagna Square',
-      departureTime: DateTime.now(),
-      availableSeats: 4,
-      pricePerSeat: 45.0,
-      status: TripStatus.inProgress,
-    );
-    
+
     final screenH = MediaQuery.sizeOf(context).height;
     final mapHeight = screenH * _kMapHeightFraction;
 
     final activeTrips = _activeTrips;
-    final currentActiveTrip = _activeTripModels.isNotEmpty ? _activeTripModels.first : trip;
+    final currentActiveTrip = _currentTrip;
 
     final surfaceCard = colorScheme.surfaceContainerHighest.withValues(
       alpha: theme.brightness == Brightness.dark ? 0.94 : 1,
@@ -389,7 +378,8 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
       backgroundColor: theme.brightness == Brightness.dark
           ? AppColors.darkBackground
           : colorScheme.surface,
-      floatingActionButton: AnimatedBuilder(
+
+      floatingActionButton: currentActiveTrip != null ? AnimatedBuilder(
         animation: Listenable.merge([
           _fabEntranceController,
           _fabPulseController,
@@ -410,13 +400,20 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
         child: FloatingActionButton(
           heroTag: 'passenger_home_sos',
           tooltip: l10n.sos,
-          onPressed: () =>
-              showEmergencyAlertFlow(context, _currentTrackingTripId),
+          onPressed: _currentTrackingTripId == null
+              ? null
+              : () => showEmergencyAlertFlow(context, _currentTrackingTripId!),
           backgroundColor: AppColors.sosRed,
           foregroundColor: Colors.white,
           elevation: 6,
           child: const Icon(Icons.emergency_rounded, size: 28),
         ),
+      ):FloatingActionButton(
+        onPressed: () => context.push('/search'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        child: const Icon(Icons.search_rounded),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: RefreshIndicator(
@@ -472,7 +469,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
                                     ),
                                   ),
                                   const SizedBox(width: 10),
-                                  Text(
+                                 _currentTrip != null ? Text(
                                     l10n.passengerDashboardMinutesAway(
                                       _etaMinutes,
                                     ),
@@ -481,7 +478,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
                                       fontWeight: FontWeight.w600,
                                       fontSize: 15,
                                     ),
-                                  ),
+                                  ):const SizedBox.shrink(),
                                 ],
                               ),
                             ),
@@ -531,36 +528,58 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen>
                       shadowColor: Colors.black26,
                       child: Padding(
                         padding: const EdgeInsets.all(18),
-                        child: PassengerActiveTripCard(trip: currentActiveTrip),
+                        child: currentActiveTrip != null
+                            ? InkWell(
+                                borderRadius: BorderRadius.circular(18),
+                                onTap: currentActiveTrip.status ==
+                                        TripStatus.inProgress
+                                    ? () => _openLiveTracking(
+                                          context,
+                                          tripId: currentActiveTrip.id,
+                                        )
+                                    : null,
+                                child: PassengerActiveTripCard(
+                                  trip: currentActiveTrip,
+                                ),
+                              )
+                            : Text(
+                                'No ongoing trip.',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.brightness == Brightness.dark
+                                      ? AppColors.textSecondaryDark
+                                      : AppColors.textSecondaryLight,
+                                ),
+                              ),
                         ),
                     ),
                     const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: () =>
-                          context.push('/rating/${currentActiveTrip.id}'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                    if (currentActiveTrip != null)
+                      FilledButton(
+                        onPressed: () =>
+                            context.push('/rating/${currentActiveTrip.id}'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              l10n.passengerDashboardIveArrived,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.check_rounded, size: 22),
+                          ],
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            l10n.passengerDashboardIveArrived,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.check_rounded, size: 22),
-                        ],
-                      ),
-                    ),
                     const SizedBox(height: 28),
                     Text(
                       l10n.passengerHomeActiveTrips,

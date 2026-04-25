@@ -60,7 +60,9 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const ShellMenuButton(),
+        leading: BackButton(
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
         title: Text('${widget.origin} → ${widget.destination}'),
         actions: [
           IconButton(
@@ -88,15 +90,25 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: FilterChip(
-                          label: Text(_sortLabel(mode, l10n)),
+                          label: Text(_sortLabel(mode, l10n),
+                          style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          ),
+                        side: BorderSide(
+                          color: Colors.transparent,
+                          width: 1,
+                        ),
+                        shadowColor: Theme.of(context).colorScheme.primary.withAlpha(30),
                           avatar: provider.sortMode == mode
                               ? null
-                              : Icon(_sortIcon(mode), size: 16),
+                              : Icon(_sortIcon(mode), size: 16, color: Theme.of(context).colorScheme.secondary),
                           selected: provider.sortMode == mode,
                           onSelected: (_) => provider.setSortMode(mode),
+                          
                           selectedColor:
-                              AppColors.primary.withValues(alpha: 0.15),
-                          checkmarkColor: AppColors.primary,
+                              Theme.of(context).colorScheme.primary.withValues(alpha: 0.21),
+                          checkmarkColor: Theme.of(context).colorScheme.primary,
                         ),
                       );
                     }).toList(),
@@ -241,10 +253,10 @@ class _TripCard extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child:  Icon(
                   Icons.person,
                   size: 32,
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(width: 16),
@@ -285,12 +297,14 @@ class _TripCard extends StatelessWidget {
                         Icon(
                           Icons.access_time,
                           size: 14,
-                          color: AppColors.textSecondaryLight,
+                          color: Theme.of(context).colorScheme.secondary,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           timeFmt.format(trip.departureTime),
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
                         const Spacer(),
                         Text(
@@ -312,7 +326,7 @@ class _TripCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(8),
                   bottomRight: Radius.circular(8),
@@ -321,12 +335,12 @@ class _TripCard extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.auto_awesome, size: 12, color: Colors.white),
+                  Icon(Icons.auto_awesome, size: 12, color: Theme.of(context).colorScheme.onSurface),
                   const SizedBox(width: 4),
                   Text(
                     'Best Match',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.w600,
                         ),
                   ),

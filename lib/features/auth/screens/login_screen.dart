@@ -82,7 +82,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter your email first.')),
+        const SnackBar(content: Text('Enter your email first.',style: TextStyle(color: Colors.white),),
+        backgroundColor: AppColors.error,
+
+        ),
       );
       return;
     }
@@ -233,56 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                Row(
-                  children: [
-                    const Expanded(child: Divider()),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'or try demo',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textHintLight,
-                            ),
-                      ),
-                    ),
-                    const Expanded(child: Divider()),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: isLoading ? null : () => _handleDemoLogin(UserRole.passenger),
-                        icon: const Icon(Icons.person_outline, size: 20),
-                        label: const Text('Passenger'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: isLoading ? null : () => _handleDemoLogin(UserRole.driver),
-                        icon: const Icon(Icons.directions_car_outlined, size: 20),
-                        label: const Text('Driver'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
+              
               ],
             ),
           ),

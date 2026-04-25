@@ -32,6 +32,15 @@ class _SearchScreenState extends State<SearchScreen> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _availableSectionKey = GlobalKey();
 
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    // Trigger pagination slightly before reaching the very bottom.
+    if (pos.pixels >= pos.maxScrollExtent - 240) {
+      context.read<SearchProvider>().loadNextBrowsePage();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -40,18 +49,20 @@ class _SearchScreenState extends State<SearchScreen> {
       _loadRouteHistory();
     });
     _loadUserLocation();
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<SearchProvider>().setBrowseBackendFilters(
             status: 'scheduled',
             page: 1,
-            limit: 20,
+            limit: 10,
           );
     });
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
@@ -133,7 +144,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   destination: _destinationResult?.name,
                   status: 'scheduled',
                   page: 1,
-                  limit: 20,
+                  limit: 10,
                 );
             _onSearch();
           },
@@ -147,7 +158,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   destination: _destinationResult?.name,
                   status: 'scheduled',
                   page: 1,
-                  limit: 20,
+                  limit: 10,
                 );
             Navigator.of(ctx).pop();
           },
@@ -479,18 +490,60 @@ class _SearchScreenState extends State<SearchScreen> {
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
-                            final trip = sorted[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: AvailableDriverRideCard(
-                                trip: trip,
-                                l10n: l10n,
-                                onTap: () => context
-                                    .push('/passenger-trip-detail/${trip.id}'),
-                              ),
-                            );
+                            if (index < sorted.length) {
+                              final trip = sorted[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: AvailableDriverRideCard(
+                                  trip: trip,
+                                  l10n: l10n,
+                                  onTap: () => context.push(
+                                      '/passenger-trip-detail/${trip.id}'),
+                                ),
+                              );
+                            }
+
+                            // Bottom indicator row (pagination).
+                            if (searchProvider.browseLoadingMore) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 18),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            if (!searchProvider.browseHasMore &&
+                                sorted.isNotEmpty) {
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 18),
+                                child: Center(
+                                  child: Text(
+                                    'No more rides',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: scheme.onSurfaceVariant,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            // Nothing to show.
+                            return const SizedBox.shrink();
                           },
-                          childCount: sorted.length,
+                          childCount: sorted.length + 1,
                         ),
                       ),
                     ),

@@ -82,7 +82,7 @@ class DriverCurrentTripCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        "Active trips",
+                        "Ongoing trips",
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: const Color.fromRGBO(12, 207, 237, 1),
                           fontWeight: FontWeight.bold,

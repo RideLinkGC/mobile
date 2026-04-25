@@ -33,9 +33,8 @@ class DriverTripListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final timeFmt = DateFormat('EEE, MMM d • h:mm a');
-    final (color, label) = switch (trip.status) {
+    final (_, _) = switch (trip.status) {
       TripStatus.scheduled => (AppColors.info, 'Scheduled'),
       TripStatus.inProgress => (AppColors.success, 'In progress'),
       TripStatus.completed => (AppColors.textSecondaryLight, 'Completed'),

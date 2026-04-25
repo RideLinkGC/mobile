@@ -50,8 +50,13 @@ class SearchProvider extends ChangeNotifier {
   int _browsePageQuery = 1;
   int _browseLimitQuery = 20;
 
+  bool _browseHasMore = true;
+  bool _browseLoadingMore = false;
+
   List<TripModel> get searchResults => _sortedResults;
   List<TripModel> get browseDriverTrips => _browseDriverTrips;
+  bool get browseHasMore => _browseHasMore;
+  bool get browseLoadingMore => _browseLoadingMore;
   BrowseSortMode get browseSortMode => _browseSortMode;
   bool get browseRecommendedOnly => _browseRecommendedOnly;
   BrowseServiceTier get browseServiceTier => _browseServiceTier;
@@ -181,12 +186,24 @@ class SearchProvider extends ChangeNotifier {
     _browseSeriesIdQuery = seriesId?.trim().isNotEmpty == true ? seriesId!.trim() : null;
     _browsePageQuery = page ?? 1;
     _browseLimitQuery = limit ?? 20;
-    await loadBrowseDrivers();
+    _browseHasMore = true;
+    await loadBrowseDrivers(reset: true);
   }
 
   /// Loads browse trips from backend (no per-driver dedupe).
-  Future<void> loadBrowseDrivers() async {
-    _browseLoading = true;
+  Future<void> loadBrowseDrivers({bool reset = false}) async {
+    if (reset) {
+      _browsePageQuery = 1;
+      _browseHasMore = true;
+    }
+
+    // For initial loads, show the big loading state.
+    // For pagination, use a separate flag so UI can keep content visible.
+    if (_browsePageQuery <= 1) {
+      _browseLoading = true;
+    } else {
+      _browseLoadingMore = true;
+    }
     _browseError = null;
     notifyListeners();
 
@@ -221,19 +238,42 @@ class SearchProvider extends ChangeNotifier {
           if (c != 0) return c;
           return a.departureTime.compareTo(b.departureTime);
         });
-        _browseDriverTrips = trips;
+
+        if (_browsePageQuery <= 1) {
+          _browseDriverTrips = trips;
+        } else {
+          final existingIds = _browseDriverTrips.map((e) => e.id).toSet();
+          _browseDriverTrips.addAll(trips.where((t) => !existingIds.contains(t.id)));
+        }
+
+        // If backend returns fewer than requested, assume no more pages.
+        if (trips.length < _browseLimitQuery) {
+          _browseHasMore = false;
+        }
       } else {
-        _browseDriverTrips = [];
+        if (_browsePageQuery <= 1) {
+          _browseDriverTrips = [];
+        }
+        _browseHasMore = false;
       }
       _browseError = null;
     } catch (e) {
       debugPrint('Browse drivers failed: $e');
       _browseError = 'Could not refresh driver list.';
-      _browseDriverTrips = [];
+      if (_browsePageQuery <= 1) {
+        _browseDriverTrips = [];
+      }
     }
 
     _browseLoading = false;
+    _browseLoadingMore = false;
     notifyListeners();
+  }
+
+  Future<void> loadNextBrowsePage() async {
+    if (_browseLoading || _browseLoadingMore || !_browseHasMore) return;
+    _browsePageQuery += 1;
+    await loadBrowseDrivers();
   }
 
   void applyBrowseFilters({

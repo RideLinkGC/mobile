@@ -13,8 +13,8 @@ import '../../../../core/services/gebeta_maps_service.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/gebeta_map_widget.dart';
-import '../../../../core/widgets/shell_drawer_scope.dart';
 import '../../../auth/providers/auth_provider.dart';
+import '../../../passenger/booking/models/booking_model.dart';
 import '../../trip/providers/trip_provider.dart';
 import '../widgets/driver_current_trip_card.dart';
 import '../widgets/driver_trip_list_card.dart';
@@ -176,6 +176,11 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
 
     final tripBookings = tripProvider.tripBookings;
     tripBookings.where((b) => b.status == BookingStatus.pending).length;
+    final featuredBookings = _featuredTrip == null
+        ? const <BookingModel>[]
+        : tripBookings
+            .where((b) => b.tripId == _featuredTrip!.id)
+            .toList(growable: false);
 
     final screenH = MediaQuery.sizeOf(context).height;
     final mapHeight = screenH * _kMapHeightFraction;
@@ -212,7 +217,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                     if (_featuredTrip != null) ...[
                       DriverCurrentTripCard(
                         trip: _featuredTrip!,
-                        bookings: tripBookings,
+                        bookings: featuredBookings,
                         etaMinutes: etaMinutes,
                         distanceKm: distanceKm,
                         onOpen: () =>

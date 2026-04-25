@@ -20,6 +20,7 @@ class BookingModel {
   final String? tripOrigin;
   final String? tripDestination;
   final DateTime? tripDepartureTime;
+  final TripStatus? tripStatus;
   final String? tripDriverId;
   final List<RouteCoordinate> tripRouteCoordinates;
   final double? tripDistanceKm;
@@ -46,6 +47,7 @@ class BookingModel {
     this.tripOrigin,
     this.tripDestination,
     this.tripDepartureTime,
+    this.tripStatus,
     this.tripDriverId,
     this.tripRouteCoordinates = const [],
     this.tripDistanceKm,
@@ -94,6 +96,7 @@ class BookingModel {
       tripDepartureTime: trip?['departureTime'] != null
           ? DateTime.parse(trip!['departureTime'] as String)
           : null,
+      tripStatus: _parseTripStatus(trip?['status'] as String?),
       tripDriverId: trip?['driverId'] as String?,
       tripRouteCoordinates: tripCoords,
       tripDistanceKm: (trip?['distanceKm'] as num?)?.toDouble(),
@@ -107,8 +110,11 @@ class BookingModel {
   }
 
   static BookingStatus _parseStatus(String? s) {
-    switch (s) {
+    final v = (s ?? '').trim().toLowerCase();
+    switch (v) {
       case 'confirmed':
+      case 'accepted':
+      case 'approved':
         return BookingStatus.confirmed;
       case 'cancelled':
       case 'canceled':
@@ -117,6 +123,25 @@ class BookingModel {
         return BookingStatus.completed;
       default:
         return BookingStatus.pending;
+    }
+  }
+
+  static TripStatus? _parseTripStatus(String? s) {
+    final v = (s ?? '').trim().toLowerCase();
+    switch (v) {
+      case 'scheduled':
+        return TripStatus.scheduled;
+      case 'inprogress':
+      case 'in_progress':
+      case 'in-progress':
+        return TripStatus.inProgress;
+      case 'completed':
+        return TripStatus.completed;
+      case 'cancelled':
+      case 'canceled':
+        return TripStatus.canceled;
+      default:
+        return null;
     }
   }
 }

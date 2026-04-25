@@ -338,6 +338,7 @@ class _MainScaffoldState extends State<MainScaffold> {
         child: CurvedNavigationBar(
           index: currentIdx,
           items: items,
+          
           color: scheme.surface,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           buttonBackgroundColor: scheme.surface,
